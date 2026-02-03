@@ -228,6 +228,42 @@ WHERE P.Status_ID = 4
 GROUP BY P.OS_Externa, TP.Nome, PI.Largura, PI.Altura, PI.Quantidade, AA.Caminho_Arquivo, PI.Observacao_Tecnica;
 
 
+USE Controle_Vendas;
+GO
+
+-- 1. MONITORAMENTO GLOBAL: O "Onde está meu pedido?" (Visão para o Vendedor/Dono)
+CREATE VIEW VW_Monitoramento_Global AS 
+SELECT 
+    P.OS_Externa AS OS,
+    C.Nome AS Cliente,
+    TP.Nome AS Produto,
+    SP.Nome AS Status_Producao,
+    FORMAT(P.Data_Pedido, 'dd/MM/yyyy HH:mm') AS Data_Entrada -- Data formatada Brasil
+FROM Pedido P
+JOIN Clientes C ON P.Cliente_ID = C.Cliente_id
+JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID
+JOIN Tipo_Produto TP ON PI.Tipo_Produto_ID = TP.Tipo_Produto_ID
+JOIN Status_Producao SP ON P.Status_ID = SP.Status_ID
+GROUP BY P.OS_Externa, C.Nome, TP.Nome, SP.Nome, P.Data_Pedido;
+
+
+-- 2. FILA DE ACABAMENTO: O que já foi impresso e está sendo montado
+CREATE VIEW VW_Em_Producao AS 
+SELECT
+   P.OS_Externa AS OS,
+   C.Nome AS Cliente,
+   TP.Nome AS Produto,
+   PI.Largura, PI.Altura, PI.Quantidade,
+   SP.Nome AS Etapa_Atual
+FROM Pedido P
+JOIN Clientes C ON P.Cliente_ID = C.Cliente_id
+JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID
+JOIN Tipo_Produto TP ON PI.Tipo_Produto_ID = TP.Tipo_Produto_ID
+JOIN Status_Producao SP ON P.Status_ID = SP.Status_ID
+WHERE P.Status_ID IN (5, 6) -- 5: Em Produção (Acabamento), 6: Finalizado (Aguardando Retirada)
+GROUP BY P.OS_Externa, C.Nome, TP.Nome, PI.Largura, PI.Altura, PI.Quantidade, SP.Nome;
+
+
 -- VIEW: DASHBOARD GESTÃO
 CREATE VIEW VW_Dashboard_Gestao AS 
 SELECT 
@@ -236,3 +272,5 @@ SELECT
 FROM Status_Producao SP
 LEFT JOIN Pedido P ON SP.Status_ID = P.Status_ID
 GROUP BY SP.Nome, SP.Ordem;
+
+
