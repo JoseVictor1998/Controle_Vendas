@@ -283,26 +283,38 @@ INSERT INTO Tipo_Produto_Material (Tipo_Produto_ID, Material_ID) VALUES
 
 
 -- 4. CRIAÇÃO DAS VIEWS (GENTE QUE PRODUZ)
-CREATE VIEW VW_Fila_Arte AS 
+CREATE OR ALTER VIEW VW_Fila_Arte AS 
 SELECT 
-    P.Os_Externa AS OS,
-    C.Nome AS Cliente,
+    P.Os_Externa AS OS, 
+    C.Nome AS Cliente, 
     TP.Nome AS Produto,
-    (SELECT STRING_AGG(M.Nome, ' / ') FROM Tipo_Produto_Material TPM JOIN Material M
-    ON 
-    TPM.Material_ID = M.Material_ID WHERE TPM.Tipo_Produto_ID = TP.Tipo_Produto_ID) AS Material_Base,
-    PI.Largura, 
-    PI.Altura, 
-    PI.Quantidade,
+    PI.Largura, PI.Altura, PI.Quantidade, 
     PI.Observacao_Tecnica, 
-    ISNULL(SA.Nome, 'Sem Arte') AS Situacao_Arte 
+    ISNULL(SA.Nome, 'Pendente / Sem Arquivo') AS Status_Arte 
 FROM Pedido P
 JOIN Clientes C ON P.Cliente_ID = C.Cliente_id
 JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID
 JOIN Tipo_Produto TP ON PI.Tipo_Produto_ID = TP.Tipo_Produto_ID 
-LEFT JOIN Arquivo_Arte AA ON PI.Item_ID = AA.Item_ID
+LEFT JOIN Arquivo_Arte AA ON PI.Item_ID = AA.Item_ID -- LEFT JOIN não "esconde" o pedido
 LEFT JOIN Status_Arte SA ON AA.Status_Arte_ID = SA.Status_Arte_ID
-WHERE P.Status_ID IN (1, 2, 3);
+WHERE P.Status_ID IN (1, 2, 3); 
+
+-- 2. FILA DE PRODUÇÃO (Garante que tudo em produção apareça)
+CREATE OR ALTER VIEW VW_Fila_Producao AS 
+SELECT 
+    P.OS_Externa AS OS, 
+    C.Nome AS Cliente, 
+    TP.Nome AS Produto,
+    PI.Largura, PI.Altura, PI.Quantidade, 
+    ISNULL(AA.Caminho_Arquivo, 'Arte não vinculada') AS Local_da_Arte, 
+    PI.Observacao_Tecnica
+FROM Pedido P
+JOIN Clientes C ON P.Cliente_ID = C.Cliente_id
+JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID 
+JOIN Tipo_Produto TP ON PI.Tipo_Produto_ID = TP.Tipo_Produto_ID
+LEFT JOIN Arquivo_Arte AA ON PI.Item_ID = AA.Item_ID -- Mudado para LEFT JOIN
+WHERE P.Status_ID IN (4, 5); 
+GO
 
 -- VIEW: FILA DE IMPRESSÃO
 CREATE OR ALTER VIEW VW_Fila_Impressao AS 
@@ -356,6 +368,44 @@ FROM Status_Producao SP
 LEFT JOIN Pedido P ON SP.Status_ID = P.Status_ID
 GROUP BY SP.Nome, SP.Ordem;
 
+USE Controle_Vendas;
+GO
+  --VIEW: Pesquisa de clientes
+CREATE OR ALTER VIEW VW_Pesquisa_Clientes_Vendas AS
+SELECT 
+    C.Cliente_id AS ID,
+    C.Nome,
+    ISNULL(PF.CPF, PJ.CNPJ) AS Documento,
+    CASE 
+        WHEN C.PF_ID IS NOT NULL THEN 'Pessoa Física'
+        WHEN C.PJ_ID IS NOT NULL THEN 'Pessoa Jurídica'
+    END AS Tipo_Cliente,
+    T.DDD + ' ' + T.Numero AS Telefone,
+    C.Email,
+    E.Cidade + ' - ' + E.Bairro AS Localidade,
+    C.Ativo
+FROM Clientes C
+LEFT JOIN Cliente_PF PF ON C.PF_ID = PF.Cliente_PF_ID
+LEFT JOIN Cliente_PJ PJ ON C.PJ_ID = PJ.Cliente_PJ_ID
+JOIN Telefone T ON C.Telefone_ID = T.Telefone_ID
+JOIN Endereco E ON C.Endereco_ID = E.Endereco_ID;
+SELECT * FROM VW_Pesquisa_Clientes_Vendas;
 
-
+  -- VIEW: Historico de Pedidos
+CREATE OR ALTER VIEW VW_Historico_Pedidos_Cliente AS
+SELECT 
+    C.Nome AS Cliente,
+    P.OS_Externa AS OS,
+    P.Data_Pedido,
+    TP.Nome AS Produto,
+    PI.Largura,
+    PI.Altura,
+    PI.Quantidade,
+    S.Nome AS Status_Atual,
+    PI.Observacao_Tecnica
+FROM Pedido P
+JOIN Clientes C ON P.Cliente_ID = C.Cliente_id
+JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID
+JOIN Tipo_Produto TP ON PI.Tipo_Produto_ID = TP.Tipo_Produto_ID
+JOIN Status_Producao S ON P.Status_ID = S.Status_ID;
 
