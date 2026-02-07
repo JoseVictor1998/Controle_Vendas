@@ -90,6 +90,8 @@ OS_Externa NVARCHAR (6) NOT NULL UNIQUE,
 Data_Pedido DATETIME DEFAULT GETDATE(),
 Status_ID INT NOT NULL,
 Observacao_Geral NVARCHAR (255) NOT NULL,
+ Valor_Total DECIMAL(10,2) DEFAULT 0,
+Forma_Pagamento NVARCHAR(50),
 CONSTRAINT FK_Pedido_Cliente_ID FOREIGN KEY (Cliente_ID) REFERENCES Clientes(Cliente_id),
 CONSTRAINT FK_Pedido_Status_ID FOREIGN KEY (Status_ID) REFERENCES Status_Producao(Status_ID)
 );
@@ -124,7 +126,9 @@ CONSTRAINT FK_Arquivo_Arte_Status_Arte_ID FOREIGN KEY (Status_Arte_ID) REFERENCE
 CREATE TABLE Usuario(
 Usuario_ID INT IDENTITY (1,1) PRIMARY KEY,
 Nome NVARCHAR(255) NOT NULL,
-Funcao NVARCHAR (50) NOT NULL
+Funcao NVARCHAR (50) NOT NULL,
+Login NVARCHAR(50) UNIQUE,
+Senha NVARCHAR(255)
 );
 
 CREATE TABLE Historico_Status(
@@ -153,12 +157,11 @@ CONSTRAINT FK_TPM_Tipo_Produto FOREIGN KEY (Tipo_Produto_ID) REFERENCES Tipo_Pro
 CONSTRAINT FK_TPM_Material FOREIGN KEY (Material_ID) REFERENCES Material(Material_ID)
 );
 
--- 3. CARGA DE DADOS INICIAIS (CONFIGURAÇÕES)
-INSERT INTO Usuario (Nome, Funcao) VALUES
-('Administrador', 'Gestão'),
-('Designer', 'Arte'),
-('Impressor', 'Produção'),
-('Vendedor', 'Comercial');
+INSERT INTO Usuario (Nome, Funcao, Login, Senha) VALUES
+('Administrador', 'Gestão', 'admin', 'admin123'),
+('Jose Porcellani', 'Produção', 'jose', '123'),
+('Vendedor Teste', 'Comercial', 'venda', 'venda123'),
+('Designer Teste', 'Arte', 'arte', 'arte123');
 
 INSERT INTO Status_Producao (Nome, Ordem)
 VALUES 
@@ -288,8 +291,10 @@ SELECT
     P.Os_Externa AS OS, 
     C.Nome AS Cliente, 
     TP.Nome AS Produto,
+    DATEDIFF(day, P.Data_Pedido, GETDATE()) AS Dias_Aguardando_Arte,
     PI.Largura, PI.Altura, PI.Quantidade, 
     PI.Observacao_Tecnica, 
+    P.Observacao_Geral,
     ISNULL(SA.Nome, 'Pendente / Sem Arquivo') AS Status_Arte 
 FROM Pedido P
 JOIN Clientes C ON P.Cliente_ID = C.Cliente_id
@@ -307,14 +312,15 @@ SELECT
     TP.Nome AS Produto,
     PI.Largura, PI.Altura, PI.Quantidade, 
     ISNULL(AA.Caminho_Arquivo, 'Arte não vinculada') AS Local_da_Arte, 
-    PI.Observacao_Tecnica
+    PI.Observacao_Tecnica,
+    P.Observacao_Geral
 FROM Pedido P
 JOIN Clientes C ON P.Cliente_ID = C.Cliente_id
 JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID 
 JOIN Tipo_Produto TP ON PI.Tipo_Produto_ID = TP.Tipo_Produto_ID
 LEFT JOIN Arquivo_Arte AA ON PI.Item_ID = AA.Item_ID -- Mudado para LEFT JOIN
 WHERE P.Status_ID IN (4, 5); 
-GO
+
 
 -- VIEW: FILA DE IMPRESSÃO
 CREATE OR ALTER VIEW VW_Fila_Impressao AS 
@@ -322,11 +328,15 @@ SELECT
     P.OS_Externa AS OS,
     C.Nome AS Cliente,
     TP.Nome AS Produto,
+    DATEDIFF(day, P.Data_Pedido, GETDATE()) AS Dias_em_Impressao,
     (SELECT STRING_AGG(M.Nome, ' / ') FROM 
     Tipo_Produto_Material TPM 
     JOIN Material M  ON TPM.Material_ID = M.Material_ID
     WHERE TPM.Tipo_Produto_ID = TP.Tipo_Produto_ID) AS Material_Base,
-    PI.Largura, PI.Altura, PI.Quantidade, AA.Caminho_Arquivo AS Link_Arte, PI.Observacao_Tecnica
+    PI.Largura, PI.Altura, PI.Quantidade,
+    AA.Caminho_Arquivo AS Link_Arte,
+    P.Observacao_Geral,
+    PI.Observacao_Tecnica
 FROM Pedido P
 JOIN Clientes C ON P.Cliente_ID = C.Cliente_ID
 JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID 
@@ -344,20 +354,22 @@ JOIN Tipo_Produto TP ON PI.Tipo_Produto_ID = TP.Tipo_Produto_ID
 JOIN Status_Producao SP ON P.Status_ID = SP.Status_ID;
 
 -- 2. FILA DE ACABAMENTO: O que já foi impresso e está sendo montado
-CREATE VIEW VW_Em_Producao AS 
+CREATE OR ALTER VIEW VW_Em_Producao AS 
 SELECT
    P.OS_Externa AS OS,
    C.Nome AS Cliente,
    TP.Nome AS Produto,
+   DATEDIFF(day, P.Data_Pedido, GETDATE()) AS Dias_em_Producao,
    PI.Largura, PI.Altura, PI.Quantidade,
-   SP.Nome AS Etapa_Atual
+   SP.Nome AS Etapa_Atual,
+   P.Observacao_Geral
 FROM Pedido P
 JOIN Clientes C ON P.Cliente_ID = C.Cliente_id
 JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID
 JOIN Tipo_Produto TP ON PI.Tipo_Produto_ID = TP.Tipo_Produto_ID
 JOIN Status_Producao SP ON P.Status_ID = SP.Status_ID
 WHERE P.Status_ID IN (5, 6) -- 5: Em Produção (Acabamento), 6: Finalizado (Aguardando Retirada)
-GROUP BY P.OS_Externa, C.Nome, TP.Nome, PI.Largura, PI.Altura, PI.Quantidade, SP.Nome;
+GROUP BY P.OS_Externa, C.Nome, TP.Nome, P.Data_Pedido, PI.Largura, PI.Altura, PI.Quantidade, SP.Nome, P.Observacao_Geral;
 
 -- VIEW: DASHBOARD GESTÃO
 CREATE VIEW VW_Dashboard_Gestao AS 
@@ -368,9 +380,7 @@ FROM Status_Producao SP
 LEFT JOIN Pedido P ON SP.Status_ID = P.Status_ID
 GROUP BY SP.Nome, SP.Ordem;
 
-USE Controle_Vendas;
-GO
-  --VIEW: Pesquisa de clientes
+
 CREATE OR ALTER VIEW VW_Pesquisa_Clientes_Vendas AS
 SELECT 
     C.Cliente_id AS ID,
@@ -391,7 +401,7 @@ JOIN Telefone T ON C.Telefone_ID = T.Telefone_ID
 JOIN Endereco E ON C.Endereco_ID = E.Endereco_ID;
 SELECT * FROM VW_Pesquisa_Clientes_Vendas;
 
-  -- VIEW: Historico de Pedidos
+
 CREATE OR ALTER VIEW VW_Historico_Pedidos_Cliente AS
 SELECT 
     C.Nome AS Cliente,
@@ -409,3 +419,276 @@ JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID
 JOIN Tipo_Produto TP ON PI.Tipo_Produto_ID = TP.Tipo_Produto_ID
 JOIN Status_Producao S ON P.Status_ID = S.Status_ID;
 
+
+CREATE OR ALTER VIEW VW_Busca_Rapida_Pedido AS
+SELECT
+P.OS_Externa AS OS,
+C.Nome AS Nome,
+P.Data_Pedido,
+SP.Nome AS Satus_Atual,
+TP.Nome AS Produto,
+PI.Altura,
+PI.Largura,
+PI.Quantidade
+FROM Pedido P
+JOIN Clientes C ON P.Cliente_ID = C.Cliente_id
+JOIN Status_Producao SP ON P.Status_ID = SP.Status_ID
+JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID
+JOIN Tipo_Produto TP ON PI.Tipo_Produto_ID = TP.Tipo_Produto_ID;
+
+CREATE OR ALTER VIEW VW_Dashboard_Financeiro AS 
+SELECT 
+    P.OS_Externa AS OS,
+    C.Nome AS Cliente,
+    P.Valor_Total,
+    P.Forma_Pagamento,
+    FORMAT(P.Data_Pedido, 'dd/MM/yyyy HH:mm') AS Data_Venda,
+    SP.Nome AS Status_Atual
+FROM Pedido P
+JOIN Clientes C ON P.Cliente_ID = C.Cliente_id
+JOIN Status_Producao SP ON P.Status_ID = SP.Status_ID;
+
+
+CREATE OR ALTER PROCEDURE SP_Validar_Login
+    @Login NVARCHAR(50),
+    @Senha NVARCHAR(255)
+AS
+BEGIN
+    SET NOCOUNT ON; -- Melhora a performance ao não retornar mensagens de "linhas afetadas"
+
+    -- Verifica se existe o par Login/Senha no banco
+    IF EXISTS (SELECT 1 FROM Usuario WHERE Login = @Login AND Senha = @Senha)
+    BEGIN
+        -- Se estiver tudo certo, o banco "entrega" os dados do funcionário para o sistema
+        SELECT 
+            Usuario_ID, 
+            Nome, 
+            Funcao 
+        FROM Usuario 
+        WHERE Login = @Login AND Senha = @Senha;
+    END
+    ELSE
+    BEGIN
+        -- Se o login ou a senha estiverem errados, o banco gera um erro para avisar a tela
+        RAISERROR('Usuário ou Senha inválidos. Tente novamente.', 16, 1);
+    END
+END
+
+CREATE OR ALTER PROCEDURE SP_Cadastrar_Cliente_Completo
+    @Nome NVARCHAR(50),
+    @Email NVARCHAR(100),
+    @DDD NVARCHAR(3),
+    @NumeroTelefone NVARCHAR(9),
+    @Cidade NVARCHAR(50),
+    @CEP NVARCHAR(8),
+    @Bairro NVARCHAR(60),
+    @Rua NVARCHAR(100),
+    @NumeroEndereco INT,
+    @Documento NVARCHAR(14), -- CPF ou CNPJ
+    @Tipo CHAR(2) -- 'PF' ou 'PJ'
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    -- Iniciamos uma transação para garantir que ou salva TUDO ou NADA
+    BEGIN TRANSACTION;
+
+    BEGIN TRY
+        -- 1. Inserir o Endereço e capturar o ID
+        INSERT INTO Endereco (Cidade, CEP, Bairro, Rua, Numero)
+        VALUES (@Cidade, @CEP, @Bairro, @Rua, @NumeroEndereco);
+        DECLARE @EndID INT = SCOPE_IDENTITY();
+
+        -- 2. Inserir o Telefone e capturar o ID
+        INSERT INTO Telefone (DDD, Numero)
+        VALUES (@DDD, @NumeroTelefone);
+        DECLARE @TelID INT = SCOPE_IDENTITY();
+
+        -- 3. Lógica para PF ou PJ
+        DECLARE @PF_ID INT = NULL;
+        DECLARE @PJ_ID INT = NULL;
+
+        IF @Tipo = 'PF'
+        BEGIN
+            INSERT INTO Cliente_PF (CPF) VALUES (@Documento);
+            SET @PF_ID = SCOPE_IDENTITY();
+        END
+        ELSE IF @Tipo = 'PJ'
+        BEGIN
+            INSERT INTO Cliente_PJ (CNPJ) VALUES (@Documento);
+            SET @PJ_ID = SCOPE_IDENTITY();
+        END
+
+        -- 4. Inserir na tabela principal de Clientes vinculando os IDs anteriores
+        INSERT INTO Clientes (Endereco_ID, Telefone_ID, PF_ID, PJ_ID, Email, Nome)
+        VALUES (@EndID, @TelID, @PF_ID, @PJ_ID, @Email, @Nome);
+
+        -- Se chegou aqui sem erros, confirma a gravação
+        COMMIT TRANSACTION;
+        PRINT 'Cliente cadastrado com sucesso!';
+
+    END TRY
+    BEGIN CATCH
+        -- Se der qualquer erro (ex: CPF duplicado), desfaz tudo o que foi feito acima
+        ROLLBACK TRANSACTION;
+        
+        DECLARE @ErrorMessage NVARCHAR(4000) = ERROR_MESSAGE();
+        RAISERROR (@ErrorMessage, 16, 1);
+    END CATCH
+END
+
+
+CREATE OR ALTER PROCEDURE SP_Criar_Pedido_Com_Item
+    @Cliente_ID INT,
+    @OS_Externa NVARCHAR(6),
+    @Status_ID INT,
+    @Observacao_Geral NVARCHAR(255),
+    @Tipo_Produto_ID INT,
+    @Largura DECIMAL(10,2),
+    @Altura DECIMAL(10,2),
+    @Quantidade INT,
+    @Observacao_Tecnica NVARCHAR(255)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRANSACTION;
+
+    BEGIN TRY
+        -- 1. Cria a cabeçalho do Pedido
+        INSERT INTO Pedido (Cliente_ID, OS_Externa, Status_ID, Observacao_Geral)
+        VALUES (@Cliente_ID, @OS_Externa, @Status_ID, @Observacao_Geral);
+        
+        -- 2. Recupera o ID do pedido que acabou de ser gerado
+        DECLARE @NovoPedidoID INT = SCOPE_IDENTITY();
+
+        -- 3. Insere o primeiro item obrigatório deste pedido
+        INSERT INTO Pedido_Item (Pedido_ID, Tipo_Produto_ID, Largura, Altura, Quantidade, Observacao_Tecnica)
+        VALUES (@NovoPedidoID, @Tipo_Produto_ID, @Largura, @Altura, @Quantidade, @Observacao_Tecnica);
+
+        COMMIT TRANSACTION;
+        PRINT 'Pedido e Item criados com sucesso!';
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+        THROW; -- Repassa o erro para a interface (ex: OS duplicada)
+    END CATCH
+END
+
+CREATE OR ALTER PROCEDURE SP_Atualizar_Status_Pedido
+   @Pedido_ID INT,
+   @Novo_Status_ID INT,
+   @Usuario_ID INT,
+   @Valor_Total DECIMAL(10,2) = NULL,   -- Novos campos opcionais
+   @Forma_Pagamento NVARCHAR(50) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRANSACTION;
+    BEGIN TRY
+        -- A TRAVA: Se tentar mudar para "Entregue" (7) sem dinheiro, o banco barra!
+        IF @Novo_Status_ID = 7 AND (@Valor_Total IS NULL OR @Valor_Total <= 0 OR @Forma_Pagamento IS NULL)
+        BEGIN
+            RAISERROR ('Erro Financeiro: Informe o Valor Total e a Forma de Pagamento para entregar o pedido.', 16, 1);
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END
+
+        -- Atualiza o status e também os valores financeiros (se enviados)
+        UPDATE Pedido
+        SET Status_ID = @Novo_Status_ID,
+            Valor_Total = ISNULL(@Valor_Total, Valor_Total),
+            Forma_Pagamento = ISNULL(@Forma_Pagamento, Forma_Pagamento)
+        WHERE Pedido_ID = @Pedido_ID;
+   
+        COMMIT TRANSACTION;
+        PRINT 'Status e Financeiro atualizados com sucesso!';
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
+END
+ 
+CREATE OR ALTER PROCEDURE SP_Vincular_Arquivo_Arte
+    @Item_ID INT,
+    @Nome_Arquivo NVARCHAR(100), -- Novo campo obrigatório
+    @Caminho_Arquivo NVARCHAR(255),
+    @Usuario_ID INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRANSACTION;
+    BEGIN TRY 
+        IF EXISTS (SELECT 1 FROM Arquivo_Arte WHERE Item_ID = @Item_ID)
+        BEGIN
+            UPDATE Arquivo_Arte
+            SET Nome_Arquivo = @Nome_Arquivo,
+                Caminho_Arquivo = @Caminho_Arquivo,
+                Status_Arte_ID = 2 
+            WHERE Item_ID = @Item_ID;
+        END
+        ELSE
+        BEGIN
+            INSERT INTO Arquivo_Arte (Item_ID, Nome_Arquivo, Caminho_Arquivo, Status_Arte_ID)
+            VALUES (@Item_ID, @Nome_Arquivo, @Caminho_Arquivo, 2);
+        END
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH 
+        ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
+END
+  
+CREATE OR ALTER TRIGGER TR_Gerar_Historico_Status
+ON Pedido
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Verifica se a coluna Status_ID foi realmente alterada
+    IF UPDATE(Status_ID)
+    BEGIN
+        INSERT INTO Historico_Status (Pedido_ID, Status_ID, Data_Mudanca, Usuario_ID)
+        SELECT 
+            i.Pedido_ID, 
+            i.Status_ID, 
+            GETDATE(), 
+            -- Aqui o sistema captura o ID do usuário que você passou na Procedure
+            -- Se por acaso não vier um ID, podemos definir um padrão (ex: 1 para Admin)
+            ISNULL(CAST(CONTEXT_INFO() AS INT), 1) 
+        FROM inserted i
+        JOIN deleted d ON i.Pedido_ID = d.Pedido_ID
+        WHERE i.Status_ID <> d.Status_ID; -- Só grava se o status for realmente diferente
+    END
+END
+
+CREATE OR ALTER TRIGGER TR_Validar_Dimensoes_Item
+ON Pedido_Item
+AFTER INSERT, UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Se houver qualquer item com Largura ou Altura menor ou igual a zero
+    IF EXISTS (
+        SELECT 1 
+        FROM inserted 
+        WHERE Largura <= 0 OR Altura <= 0
+    )
+    BEGIN
+        -- O SQL cancela a operação e envia um aviso claro para a tela
+        ROLLBACK TRANSACTION;
+        RAISERROR ('Erro de Segurança: Largura e Altura devem ser maiores que zero.', 16, 1);
+    END
+END
+
+CREATE OR ALTER TRIGGER TR_Proibir_Delete_Pedido
+ON Pedido
+FOR DELETE
+AS
+BEGIN
+    ROLLBACK TRANSACTION;
+    RAISERROR ('Erro: Não é permitido excluir pedidos. Altere o status se necessário.', 16, 1);
+END
