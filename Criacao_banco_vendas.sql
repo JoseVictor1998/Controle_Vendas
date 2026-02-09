@@ -89,11 +89,13 @@ Cliente_ID INT NOT NULL,
 OS_Externa NVARCHAR (6) NOT NULL UNIQUE,
 Data_Pedido DATETIME DEFAULT GETDATE(),
 Status_ID INT NOT NULL,
+Vendedor_ID INT,
 Observacao_Geral NVARCHAR (255) NOT NULL,
  Valor_Total DECIMAL(10,2) DEFAULT 0,
 Forma_Pagamento NVARCHAR(50),
 CONSTRAINT FK_Pedido_Cliente_ID FOREIGN KEY (Cliente_ID) REFERENCES Clientes(Cliente_id),
-CONSTRAINT FK_Pedido_Status_ID FOREIGN KEY (Status_ID) REFERENCES Status_Producao(Status_ID)
+CONSTRAINT FK_Pedido_Status_ID FOREIGN KEY (Status_ID) REFERENCES Status_Producao(Status_ID),
+CONSTRAINT FK_Pedido_Vendedor FOREIGN KEY (Vendedor_ID) REFERENCES Usuario(Usuario_ID)
 );
 
 CREATE TABLE Pedido_Item(
@@ -104,6 +106,7 @@ Largura DECIMAL(10,2) NOT NULL,
 Altura DECIMAL (10,2) NOT NULL,
 Quantidade INT NOT NULL,
 Observacao_Tecnica NVARCHAR(255) NOT NULL,
+Caminho_Foto NVARCHAR(255),
 CONSTRAINT FK_Pedido_Item_Pedido_ID FOREIGN KEY (Pedido_ID) REFERENCES Pedido(Pedido_ID),
 CONSTRAINT FK_Pedido_Item_Tipo_Produto_ID FOREIGN KEY (Tipo_Produto_ID) REFERENCES Tipo_Produto(Tipo_Produto_ID)
 );
@@ -128,7 +131,8 @@ Usuario_ID INT IDENTITY (1,1) PRIMARY KEY,
 Nome NVARCHAR(255) NOT NULL,
 Funcao NVARCHAR (50) NOT NULL,
 Login NVARCHAR(50) UNIQUE,
-Senha NVARCHAR(255)
+Senha NVARCHAR(255),
+Nivel_Acesso NVARCHAR(20) DEFAULT 'Vendedor'
 );
 
 CREATE TABLE Historico_Status(
@@ -157,11 +161,28 @@ CONSTRAINT FK_TPM_Tipo_Produto FOREIGN KEY (Tipo_Produto_ID) REFERENCES Tipo_Pro
 CONSTRAINT FK_TPM_Material FOREIGN KEY (Material_ID) REFERENCES Material(Material_ID)
 );
 
+CREATE TABLE Custos_Fixos (
+    Custo_ID INT IDENTITY(1,1) PRIMARY KEY,
+    Descricao NVARCHAR(100) NOT NULL,
+    Valor DECIMAL(10,2) NOT NULL,
+    Data_Vencimento DATE NOT NULL,
+    Status_Pagamento BIT DEFAULT 0 -- 0: Pendente, 1: Pago
+);
+
+
 INSERT INTO Usuario (Nome, Funcao, Login, Senha) VALUES
 ('Administrador', 'Gestão', 'admin', 'admin123'),
 ('Jose Porcellani', 'Produção', 'jose', '123'),
 ('Vendedor Teste', 'Comercial', 'venda', 'venda123'),
 ('Designer Teste', 'Arte', 'arte', 'arte123');
+
+-- 1. Ajustar Usuários para suportar os novos setores
+-- Já incluímos: Admin, Vendedor, Arte, Impressao
+UPDATE Usuario SET Nivel_Acesso = 'Admin' WHERE Login = 'admin';
+UPDATE Usuario SET Nivel_Acesso = 'Arte' WHERE Login = 'arte';
+UPDATE Usuario SET Nivel_Acesso = 'Impressao' WHERE Login = 'jose';
+UPDATE Usuario SET Nivel_Acesso = 'Vendedor' WHERE Login = 'venda';
+
 
 INSERT INTO Status_Producao (Nome, Ordem)
 VALUES 
@@ -304,23 +325,6 @@ LEFT JOIN Arquivo_Arte AA ON PI.Item_ID = AA.Item_ID -- LEFT JOIN não "esconde"
 LEFT JOIN Status_Arte SA ON AA.Status_Arte_ID = SA.Status_Arte_ID
 WHERE P.Status_ID IN (1, 2, 3); 
 
--- 2. FILA DE PRODUÇÃO (Garante que tudo em produção apareça)
-CREATE OR ALTER VIEW VW_Fila_Producao AS 
-SELECT 
-    P.OS_Externa AS OS, 
-    C.Nome AS Cliente, 
-    TP.Nome AS Produto,
-    PI.Largura, PI.Altura, PI.Quantidade, 
-    ISNULL(AA.Caminho_Arquivo, 'Arte não vinculada') AS Local_da_Arte, 
-    PI.Observacao_Tecnica,
-    P.Observacao_Geral
-FROM Pedido P
-JOIN Clientes C ON P.Cliente_ID = C.Cliente_id
-JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID 
-JOIN Tipo_Produto TP ON PI.Tipo_Produto_ID = TP.Tipo_Produto_ID
-LEFT JOIN Arquivo_Arte AA ON PI.Item_ID = AA.Item_ID -- Mudado para LEFT JOIN
-WHERE P.Status_ID IN (4, 5); 
-
 
 -- VIEW: FILA DE IMPRESSÃO
 CREATE OR ALTER VIEW VW_Fila_Impressao AS 
@@ -353,23 +357,22 @@ JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID
 JOIN Tipo_Produto TP ON PI.Tipo_Produto_ID = TP.Tipo_Produto_ID
 JOIN Status_Producao SP ON P.Status_ID = SP.Status_ID;
 
--- 2. FILA DE ACABAMENTO: O que já foi impresso e está sendo montado
-CREATE OR ALTER VIEW VW_Em_Producao AS 
-SELECT
-   P.OS_Externa AS OS,
-   C.Nome AS Cliente,
-   TP.Nome AS Produto,
-   DATEDIFF(day, P.Data_Pedido, GETDATE()) AS Dias_em_Producao,
-   PI.Largura, PI.Altura, PI.Quantidade,
-   SP.Nome AS Etapa_Atual,
-   P.Observacao_Geral
+-- View de Produção com Foto e SLA (Tempo de produção)
+CREATE OR ALTER VIEW VW_Fila_Producao_Completa AS 
+SELECT 
+    P.OS_Externa AS OS, 
+    C.Nome AS Cliente, 
+    TP.Nome AS Produto,
+    PI.Largura, PI.Altura, PI.Quantidade, 
+    PI.Caminho_Foto, -- Nova coluna de foto
+    DATEDIFF(HOUR, P.Data_Pedido, GETDATE()) AS Horas_Desde_Abertura,
+    U.Nome AS Vendedor_Responsavel
 FROM Pedido P
 JOIN Clientes C ON P.Cliente_ID = C.Cliente_id
-JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID
+JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID 
 JOIN Tipo_Produto TP ON PI.Tipo_Produto_ID = TP.Tipo_Produto_ID
-JOIN Status_Producao SP ON P.Status_ID = SP.Status_ID
-WHERE P.Status_ID IN (5, 6) -- 5: Em Produção (Acabamento), 6: Finalizado (Aguardando Retirada)
-GROUP BY P.OS_Externa, C.Nome, TP.Nome, P.Data_Pedido, PI.Largura, PI.Altura, PI.Quantidade, SP.Nome, P.Observacao_Geral;
+JOIN Usuario U ON P.Vendedor_ID = U.Usuario_ID
+WHERE P.Status_ID IN (4, 5);
 
 -- VIEW: DASHBOARD GESTÃO
 CREATE VIEW VW_Dashboard_Gestao AS 
@@ -380,6 +383,18 @@ FROM Status_Producao SP
 LEFT JOIN Pedido P ON SP.Status_ID = P.Status_ID
 GROUP BY SP.Nome, SP.Ordem;
 
+-- View para o Vendedor ver apenas os SEUS pedidos e o status deles
+CREATE OR ALTER VIEW VW_Meus_Pedidos_Vendedor AS
+SELECT 
+    P.Vendedor_ID, -- Usado para filtrar no App
+    P.OS_Externa,
+    C.Nome AS Cliente,
+    SP.Nome AS Status_Atual,
+    P.Valor_Total,
+    P.Data_Pedido
+FROM Pedido P
+JOIN Clientes C ON P.Cliente_ID = C.Cliente_id
+JOIN Status_Producao SP ON P.Status_ID = SP.Status_ID;
 
 CREATE OR ALTER VIEW VW_Pesquisa_Clientes_Vendas AS
 SELECT 
@@ -425,7 +440,7 @@ SELECT
 P.OS_Externa AS OS,
 C.Nome AS Nome,
 P.Data_Pedido,
-SP.Nome AS Satus_Atual,
+SP.Nome AS Status_Atual,
 TP.Nome AS Produto,
 PI.Altura,
 PI.Largura,
@@ -448,6 +463,32 @@ FROM Pedido P
 JOIN Clientes C ON P.Cliente_ID = C.Cliente_id
 JOIN Status_Producao SP ON P.Status_ID = SP.Status_ID;
 
+
+-- Nova VIEW para o Dashboard do Patrão (Lucro Líquido)
+CREATE OR ALTER VIEW VW_Dashboard_BI_Gerencial AS
+SELECT 
+    (SELECT ISNULL(SUM(Valor_Total), 0) FROM Pedido WHERE MONTH(Data_Pedido) = MONTH(GETDATE())) AS Total_Vendas_Mes,
+    (SELECT ISNULL(SUM(Valor), 0) FROM Custos_Fixos WHERE MONTH(Data_Vencimento) = MONTH(GETDATE())) AS Total_Custos_Mes,
+    ((SELECT ISNULL(SUM(Valor_Total), 0) FROM Pedido WHERE MONTH(Data_Pedido) = MONTH(GETDATE())) - 
+     (SELECT ISNULL(SUM(Valor), 0) FROM Custos_Fixos WHERE MONTH(Data_Vencimento) = MONTH(GETDATE()))) AS Lucro_Estimado;
+
+-- View de Alerta de Atrasos para a Gestão
+CREATE OR ALTER VIEW VW_Alertas_SLA AS
+SELECT 
+    P.OS_Externa,
+    C.Nome AS Cliente,
+    SP.Nome AS Status_Atual,
+    DATEDIFF(HOUR, H.Data_Mudanca, GETDATE()) AS Horas_No_Status,
+    CASE 
+        WHEN SP.Status_ID IN (1,2,3) AND DATEDIFF(HOUR, H.Data_Mudanca, GETDATE()) > 24 THEN 'ATRASADO NA ARTE'
+        WHEN SP.Status_ID IN (4,5) AND DATEDIFF(HOUR, H.Data_Mudanca, GETDATE()) > 48 THEN 'ATRASADO NA PRODUÇÃO'
+        ELSE 'No Prazo'
+    END AS Alerta_Prazo
+FROM Pedido P
+JOIN Clientes C ON P.Cliente_ID = C.Cliente_id
+JOIN Status_Producao SP ON P.Status_ID = SP.Status_ID
+JOIN Historico_Status H ON P.Pedido_ID = H.Pedido_ID
+WHERE H.Historico_ID = (SELECT MAX(Historico_ID) FROM Historico_Status WHERE Pedido_ID = P.Pedido_ID);
 
 CREATE OR ALTER PROCEDURE SP_Validar_Login
     @Login NVARCHAR(50),
@@ -541,38 +582,35 @@ END
 CREATE OR ALTER PROCEDURE SP_Criar_Pedido_Com_Item
     @Cliente_ID INT,
     @OS_Externa NVARCHAR(6),
-    @Status_ID INT,
+    @Vendedor_ID INT, -- Novo parâmetro obrigatório
     @Observacao_Geral NVARCHAR(255),
     @Tipo_Produto_ID INT,
     @Largura DECIMAL(10,2),
     @Altura DECIMAL(10,2),
     @Quantidade INT,
-    @Observacao_Tecnica NVARCHAR(255)
+    @Observacao_Tecnica NVARCHAR(255),
+    @Caminho_Foto NVARCHAR(255) = NULL -- Novo parâmetro opcional
 AS
 BEGIN
     SET NOCOUNT ON;
     BEGIN TRANSACTION;
-
     BEGIN TRY
-        -- 1. Cria a cabeçalho do Pedido
-        INSERT INTO Pedido (Cliente_ID, OS_Externa, Status_ID, Observacao_Geral)
-        VALUES (@Cliente_ID, @OS_Externa, @Status_ID, @Observacao_Geral);
+        INSERT INTO Pedido (Cliente_ID, OS_Externa, Status_ID, Vendedor_ID, Observacao_Geral)
+        VALUES (@Cliente_ID, @OS_Externa, 1, @Vendedor_ID, @Observacao_Geral);
         
-        -- 2. Recupera o ID do pedido que acabou de ser gerado
         DECLARE @NovoPedidoID INT = SCOPE_IDENTITY();
 
-        -- 3. Insere o primeiro item obrigatório deste pedido
-        INSERT INTO Pedido_Item (Pedido_ID, Tipo_Produto_ID, Largura, Altura, Quantidade, Observacao_Tecnica)
-        VALUES (@NovoPedidoID, @Tipo_Produto_ID, @Largura, @Altura, @Quantidade, @Observacao_Tecnica);
+        INSERT INTO Pedido_Item (Pedido_ID, Tipo_Produto_ID, Largura, Altura, Quantidade, Observacao_Tecnica, Caminho_Foto)
+        VALUES (@NovoPedidoID, @Tipo_Produto_ID, @Largura, @Altura, @Quantidade, @Observacao_Tecnica, @Caminho_Foto);
 
         COMMIT TRANSACTION;
-        PRINT 'Pedido e Item criados com sucesso!';
     END TRY
     BEGIN CATCH
-        ROLLBACK TRANSACTION;
-        THROW; -- Repassa o erro para a interface (ex: OS duplicada)
+        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+        THROW;
     END CATCH
 END
+
 
 CREATE OR ALTER PROCEDURE SP_Atualizar_Status_Pedido
    @Pedido_ID INT,
@@ -691,4 +729,16 @@ AS
 BEGIN
     ROLLBACK TRANSACTION;
     RAISERROR ('Erro: Não é permitido excluir pedidos. Altere o status se necessário.', 16, 1);
+END
+
+USE Controle_Vendas;
+
+CREATE OR ALTER TRIGGER TR_Historico_Status_Insert
+ON Pedido
+AFTER INSERT
+AS
+BEGIN
+    INSERT INTO Historico_Status (Pedido_ID, Status_ID, Data_Mudanca, Usuario_ID)
+    SELECT Pedido_ID, Status_ID, GETDATE(), 1
+    FROM inserted;
 END
