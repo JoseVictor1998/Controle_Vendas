@@ -55,9 +55,13 @@ public partial class ControleVendasContext : DbContext
 
     public virtual DbSet<VwDashboardFinanceiro> VwDashboardFinanceiros { get; set; }
 
-    public virtual DbSet<VwDashboardGestao> VwDashboardGestaos { get; set; }
+    public virtual DbSet<VwDashboardGestao> VwDashboardGestaoAtiva { get; set; }
+
+    public virtual DbSet<VwDashboardGestaoAtiva> VwDashboardGestaoAtivas { get; set; }
 
     public virtual DbSet<VwFilaArte> VwFilaArtes { get; set; }
+
+    public virtual DbSet<VwFilaArteFinalistaFull> VwFilaArteFinalistaFulls { get; set; }
 
     public virtual DbSet<VwFilaImpressao> VwFilaImpressaos { get; set; }
 
@@ -73,7 +77,7 @@ public partial class ControleVendasContext : DbContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseSqlServer("Server=localhost;Database=Controle_Vendas;User Id=sa;Password=123;TrustServerCertificate=True");
+        => optionsBuilder.UseSqlServer("Server=localhost;Database=Controle_Vendas;User Id=sa;Password=123;TrustServerCertificate=True;");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -81,7 +85,7 @@ public partial class ControleVendasContext : DbContext
         {
             entity.HasKey(e => e.ArquivoId).HasName("PK__Arquivo___51EC0F3F01BC0E91");
 
-            entity.ToTable("Arquivo_Arte");
+            entity.ToTable("Arquivo_Arte", tb => tb.HasTrigger("TR_ArteReprovada_ArquivaPedido"));
 
             entity.Property(e => e.ArquivoId).HasColumnName("Arquivo_ID");
             entity.Property(e => e.CaminhoArquivo)
@@ -523,6 +527,16 @@ public partial class ControleVendasContext : DbContext
             entity.Property(e => e.TotalPedidos).HasColumnName("Total_Pedidos");
         });
 
+        modelBuilder.Entity<VwDashboardGestaoAtiva>(entity =>
+        {
+            entity
+                .HasNoKey()
+                .ToView("VW_Dashboard_Gestao_Ativa");
+
+            entity.Property(e => e.Etapa).HasMaxLength(100);
+            entity.Property(e => e.TotalPedidos).HasColumnName("Total_Pedidos");
+        });
+
         modelBuilder.Entity<VwFilaArte>(entity =>
         {
             entity
@@ -543,6 +557,34 @@ public partial class ControleVendasContext : DbContext
                 .HasMaxLength(6)
                 .HasColumnName("OS");
             entity.Property(e => e.Produto).HasMaxLength(100);
+            entity.Property(e => e.StatusArte)
+                .HasMaxLength(100)
+                .HasColumnName("Status_Arte");
+        });
+
+        modelBuilder.Entity<VwFilaArteFinalistaFull>(entity =>
+        {
+            entity
+                .HasNoKey()
+                .ToView("VW_Fila_Arte_Finalista_Full");
+
+            entity.Property(e => e.Altura).HasColumnType("decimal(10, 2)");
+            entity.Property(e => e.CaminhoArte)
+                .HasMaxLength(255)
+                .HasColumnName("Caminho_Arte");
+            entity.Property(e => e.Cliente).HasMaxLength(50);
+            entity.Property(e => e.Largura).HasColumnType("decimal(10, 2)");
+            entity.Property(e => e.ObservacaoTecnica)
+                .HasMaxLength(255)
+                .HasColumnName("Observacao_Tecnica");
+            entity.Property(e => e.Os)
+                .HasMaxLength(6)
+                .HasColumnName("OS");
+            entity.Property(e => e.Produto).HasMaxLength(100);
+            entity.Property(e => e.SetorFila)
+                .HasMaxLength(21)
+                .IsUnicode(false)
+                .HasColumnName("Setor_Fila");
             entity.Property(e => e.StatusArte)
                 .HasMaxLength(100)
                 .HasColumnName("Status_Arte");

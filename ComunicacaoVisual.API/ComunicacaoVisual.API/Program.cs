@@ -1,5 +1,4 @@
 using ComunicacaoVisual.API.Models;
-
 var builder = WebApplication.CreateBuilder(args);
 
 // 1. Configurações de Serviços

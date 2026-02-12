@@ -56,6 +56,15 @@ CONSTRAINT FK_Cliente_PF FOREIGN KEY (PF_ID) REFERENCES Cliente_PF(Cliente_PF_ID
 CONSTRAINT CK_PJ_PF CHECK ((PJ_ID IS NOT NULL AND PF_ID IS NULL) OR (PJ_ID IS NULL AND PF_ID IS NOT NULL))
 );
 
+CREATE TABLE Usuario(
+Usuario_ID INT IDENTITY (1,1) PRIMARY KEY,
+Nome NVARCHAR(255) NOT NULL,
+Funcao NVARCHAR (50) NOT NULL,
+Login NVARCHAR(50) UNIQUE,
+Senha NVARCHAR(255),
+Nivel_Acesso NVARCHAR(20) DEFAULT 'Vendedor'
+);
+
 CREATE TABLE Categoria_Produtos(
 Categoria_ID INT IDENTITY (1,1) PRIMARY KEY,
 Nome NVARCHAR (100) NOT NULL,
@@ -126,14 +135,7 @@ Status_Arte_ID INT NOT NULL,
 CONSTRAINT FK_Arquivo_Arte_Item_ID FOREIGN KEY (Item_ID) REFERENCES Pedido_Item(Item_ID),
 CONSTRAINT FK_Arquivo_Arte_Status_Arte_ID FOREIGN KEY (Status_Arte_ID) REFERENCES Status_Arte(Status_Arte_ID)
 );
-CREATE TABLE Usuario(
-Usuario_ID INT IDENTITY (1,1) PRIMARY KEY,
-Nome NVARCHAR(255) NOT NULL,
-Funcao NVARCHAR (50) NOT NULL,
-Login NVARCHAR(50) UNIQUE,
-Senha NVARCHAR(255),
-Nivel_Acesso NVARCHAR(20) DEFAULT 'Vendedor'
-);
+
 
 CREATE TABLE Historico_Status(
 Historico_ID INT IDENTITY (1,1) PRIMARY KEY ,
@@ -192,7 +194,9 @@ VALUES
 ('Arte Aprovada', 4),
 ('Em Producao', 5),
 ('Finalizada', 6),
-('Entregue', 7);
+('Entregue', 7),
+('Arquivado', 8),
+
 
 INSERT INTO Status_Arte (Nome)
 Values
@@ -325,6 +329,29 @@ LEFT JOIN Arquivo_Arte AA ON PI.Item_ID = AA.Item_ID -- LEFT JOIN não "esconde"
 LEFT JOIN Status_Arte SA ON AA.Status_Arte_ID = SA.Status_Arte_ID
 WHERE P.Status_ID IN (1, 2, 3); 
 
+CREATE OR ALTER VIEW VW_Fila_Arte_Finalista_Full AS
+SELECT 
+    P.OS_Externa AS OS,
+    C.Nome AS Cliente,
+    TP.Nome AS Produto,
+    PI.Largura, 
+    PI.Altura, 
+    PI.Quantidade,
+    PI.Observacao_Tecnica,
+    AA.Caminho_Arquivo AS Caminho_Arte,
+    SA.Nome AS Status_Arte,
+    -- Coluna para facilitar o filtro no seu front-end (Node.js)
+    CASE 
+        WHEN P.Status_ID = 8 THEN 'ARQUIVADOS/REPROVADOS'
+        ELSE 'FILA ATIVA'
+    END AS Setor_Fila
+FROM Pedido P
+JOIN Clientes C ON P.Cliente_ID = C.Cliente_id
+JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID
+JOIN Tipo_Produto TP ON PI.Tipo_Produto_ID = TP.Tipo_Produto_ID
+LEFT JOIN Arquivo_Arte AA ON PI.Item_ID = AA.Item_ID
+LEFT JOIN Status_Arte SA ON AA.Status_Arte_ID = SA.Status_Arte_ID;
+
 
 -- VIEW: FILA DE IMPRESSÃO
 CREATE OR ALTER VIEW VW_Fila_Impressao AS 
@@ -374,13 +401,14 @@ JOIN Tipo_Produto TP ON PI.Tipo_Produto_ID = TP.Tipo_Produto_ID
 JOIN Usuario U ON P.Vendedor_ID = U.Usuario_ID
 WHERE P.Status_ID IN (4, 5);
 
--- VIEW: DASHBOARD GESTÃO
-CREATE VIEW VW_Dashboard_Gestao AS 
+CREATE OR ALTER VIEW VW_Dashboard_Gestao_Ativa AS 
 SELECT 
     SP.Nome AS Etapa,
-    COUNT(DISTINCT P.Pedido_ID) AS Total_Pedidos 
+    COUNT(P.Pedido_ID) AS Total_Pedidos 
 FROM Status_Producao SP
 LEFT JOIN Pedido P ON SP.Status_ID = P.Status_ID
+-- Filtro para remover os Arquivados da visão de gestão diária
+WHERE SP.Status_ID <> 8
 GROUP BY SP.Nome, SP.Ordem;
 
 -- View para o Vendedor ver apenas os SEUS pedidos e o status deles
@@ -414,7 +442,7 @@ LEFT JOIN Cliente_PF PF ON C.PF_ID = PF.Cliente_PF_ID
 LEFT JOIN Cliente_PJ PJ ON C.PJ_ID = PJ.Cliente_PJ_ID
 JOIN Telefone T ON C.Telefone_ID = T.Telefone_ID
 JOIN Endereco E ON C.Endereco_ID = E.Endereco_ID;
-SELECT * FROM VW_Pesquisa_Clientes_Vendas;
+
 
 
 CREATE OR ALTER VIEW VW_Historico_Pedidos_Cliente AS
@@ -678,6 +706,55 @@ BEGIN
     END CATCH
 END
   
+CREATE OR ALTER PROCEDURE SP_Cadastrar_Tipo_Produto_Completo
+    @Categoria_ID INT,
+    @Nome NVARCHAR(100),
+    @Descricao_Tecnica NVARCHAR(255),
+    @Usa_Adesivo BIT,
+    @Usa_Mascara BIT,
+    @Material_ID_1 INT,           -- Obrigatório
+    @Material_ID_2 INT = NULL,    -- Opcional
+    @Material_ID_3 INT = NULL     -- Opcional
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRANSACTION;
+
+    BEGIN TRY
+        -- 1. Insere o Tipo de Produto
+        INSERT INTO Tipo_Produto (Categoria_ID, Nome, Descricao_Tecnica, Usa_Adesivo, Usa_Mascara)
+        VALUES (@Categoria_ID, @Nome, @Descricao_Tecnica, @Usa_Adesivo, @Usa_Mascara);
+
+        -- Captura o ID do produto que acabou de ser criado
+        DECLARE @NovoProdutoID INT = SCOPE_IDENTITY();
+
+        -- 2. Vincula o primeiro material (Sempre existe)
+        INSERT INTO Tipo_Produto_Material (Tipo_Produto_ID, Material_ID)
+        VALUES (@NovoProdutoID, @Material_ID_1);
+
+        -- 3. Vincula o segundo material (Se houver)
+        IF @Material_ID_2 IS NOT NULL
+        BEGIN
+            INSERT INTO Tipo_Produto_Material (Tipo_Produto_ID, Material_ID)
+            VALUES (@NovoProdutoID, @Material_ID_2);
+        END
+
+        -- 4. Vincula o terceiro material (Se houver)
+        IF @Material_ID_3 IS NOT NULL
+        BEGIN
+            INSERT INTO Tipo_Produto_Material (Tipo_Produto_ID, Material_ID)
+            VALUES (@NovoProdutoID, @Material_ID_3);
+        END
+
+        COMMIT TRANSACTION;
+        PRINT 'Produto e vínculos de materiais cadastrados com sucesso!';
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
+END
+
 CREATE OR ALTER TRIGGER TR_Gerar_Historico_Status
 ON Pedido
 AFTER UPDATE
@@ -731,7 +808,6 @@ BEGIN
     RAISERROR ('Erro: Não é permitido excluir pedidos. Altere o status se necessário.', 16, 1);
 END
 
-USE Controle_Vendas;
 
 CREATE OR ALTER TRIGGER TR_Historico_Status_Insert
 ON Pedido
@@ -743,28 +819,27 @@ BEGIN
     FROM inserted;
 END
 
-USE Controle_Vendas;
 
--- 1. Criando os outros 2 Vendedores (se ainda não criou)
-INSERT INTO Usuario (Nome, Funcao, Login, Senha, Nivel_Acesso) VALUES
-('Carlos Vendas', 'Comercial', 'carlos', '123', 'Vendedor'),
-('Mariana Comercial', 'Comercial', 'mari', '123', 'Vendedor');
+CREATE OR ALTER TRIGGER TR_ArteReprovada_ArquivaPedido
+ON Arquivo_Arte
+AFTER UPDATE, INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
 
--- 2. Adicionando Custos Fixos (Para o gráfico de lucro aparecer)
-INSERT INTO Custos_Fixos (Descricao, Valor, Data_Vencimento, Status_Pagamento) VALUES
-('Aluguel Galpão', 2500.00, '2026-02-10', 1),
-('Energia Elétrica', 850.00, '2026-02-15', 0),
-('Internet Fibra', 150.00, '2026-02-05', 1);
+    -- ID 5 = Reprovada (conforme seu INSERT na Status_Arte)
+    -- ID 8 = Arquivado (conforme seu INSERT na Status_Producao)
+    
+    IF EXISTS (SELECT 1 FROM inserted WHERE Status_Arte_ID = 5)
+    BEGIN
+        UPDATE P
+        SET P.Status_ID = 8
+        FROM Pedido P
+        INNER JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID
+        INNER JOIN inserted i ON PI.Item_ID = i.Item_ID
+        WHERE i.Status_Arte_ID = 5;
+        
+        PRINT 'Automação: Pedido arquivado porque a arte foi marcada como Reprovada.';
+    END
+END
 
--- 3. Inserindo Pedidos para cada vendedor (Simulando faturamento de Fevereiro)
--- Pedido do Vendedor 'venda' (ID 3)
-EXEC SP_Criar_Pedido_Com_Item 1, 'OS-101', 3, 'Placa para Fachada', 3, 200.00, 100.00, 1, 'ACM com Adesivo Fosco', 'https://via.placeholder.com/150';
-UPDATE Pedido SET Valor_Total = 1200.00, Forma_Pagamento = 'PIX' WHERE OS_Externa = 'OS-101';
-
--- Pedido do Vendedor 'carlos' (ID 5)
-EXEC SP_Criar_Pedido_Com_Item 1, 'OS-102', 5, 'Adesivos de Vitrine', 1, 50.00, 50.00, 20, 'Recorte Eletrônico', 'https://via.placeholder.com/150';
-UPDATE Pedido SET Valor_Total = 450.00, Forma_Pagamento = 'Cartão' WHERE OS_Externa = 'OS-102';
-
--- Pedido do Vendedor 'mari' (ID 6)
-EXEC SP_Criar_Pedido_Com_Item 1, 'OS-103', 6, 'Letreiro Acrílico', 13, 100.00, 50.00, 1, 'Corte Laser + UV', 'https://via.placeholder.com/150';
-UPDATE Pedido SET Valor_Total = 2800.00, Forma_Pagamento = 'Boleto' WHERE OS_Externa = 'OS-103';

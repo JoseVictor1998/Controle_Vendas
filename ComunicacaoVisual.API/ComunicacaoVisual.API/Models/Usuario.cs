@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 
 namespace ComunicacaoVisual.API.Models;
 
 public partial class Usuario
 {
-    [Key]
     public int UsuarioId { get; set; }
 
     public string Nome { get; set; } = null!;

@@ -1,6 +1,6 @@
 ﻿namespace ComunicacaoVisual.API.Models
 {
-    public class AtualizarStatusPedidoImput
+    public class AtualizarStatusPedidoInput
     {
         public int PedidoId { get; set; }
         public int NovoStatusId { get; set; }
