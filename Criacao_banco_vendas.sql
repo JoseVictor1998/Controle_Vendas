@@ -192,7 +192,9 @@ VALUES
 ('Arte Aprovada', 4),
 ('Em Producao', 5),
 ('Finalizada', 6),
-('Entregue', 7);
+('Entregue', 7),
+('Arquivado', 8),
+
 
 INSERT INTO Status_Arte (Nome)
 Values
@@ -325,6 +327,29 @@ LEFT JOIN Arquivo_Arte AA ON PI.Item_ID = AA.Item_ID -- LEFT JOIN não "esconde"
 LEFT JOIN Status_Arte SA ON AA.Status_Arte_ID = SA.Status_Arte_ID
 WHERE P.Status_ID IN (1, 2, 3); 
 
+CREATE OR ALTER VIEW VW_Fila_Arte_Finalista_Full AS
+SELECT 
+    P.OS_Externa AS OS,
+    C.Nome AS Cliente,
+    TP.Nome AS Produto,
+    PI.Largura, 
+    PI.Altura, 
+    PI.Quantidade,
+    PI.Observacao_Tecnica,
+    AA.Caminho_Arquivo AS Caminho_Arte,
+    SA.Nome AS Status_Arte,
+    -- Coluna para facilitar o filtro no seu front-end (Node.js)
+    CASE 
+        WHEN P.Status_ID = 8 THEN 'ARQUIVADOS/REPROVADOS'
+        ELSE 'FILA ATIVA'
+    END AS Setor_Fila
+FROM Pedido P
+JOIN Clientes C ON P.Cliente_ID = C.Cliente_id
+JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID
+JOIN Tipo_Produto TP ON PI.Tipo_Produto_ID = TP.Tipo_Produto_ID
+LEFT JOIN Arquivo_Arte AA ON PI.Item_ID = AA.Item_ID
+LEFT JOIN Status_Arte SA ON AA.Status_Arte_ID = SA.Status_Arte_ID;
+
 
 -- VIEW: FILA DE IMPRESSÃO
 CREATE OR ALTER VIEW VW_Fila_Impressao AS 
@@ -374,13 +399,14 @@ JOIN Tipo_Produto TP ON PI.Tipo_Produto_ID = TP.Tipo_Produto_ID
 JOIN Usuario U ON P.Vendedor_ID = U.Usuario_ID
 WHERE P.Status_ID IN (4, 5);
 
--- VIEW: DASHBOARD GESTÃO
-CREATE VIEW VW_Dashboard_Gestao AS 
+CREATE OR ALTER VIEW VW_Dashboard_Gestao_Ativa AS 
 SELECT 
     SP.Nome AS Etapa,
-    COUNT(DISTINCT P.Pedido_ID) AS Total_Pedidos 
+    COUNT(P.Pedido_ID) AS Total_Pedidos 
 FROM Status_Producao SP
 LEFT JOIN Pedido P ON SP.Status_ID = P.Status_ID
+-- Filtro para remover os Arquivados da visão de gestão diária
+WHERE SP.Status_ID <> 8
 GROUP BY SP.Nome, SP.Ordem;
 
 -- View para o Vendedor ver apenas os SEUS pedidos e o status deles
@@ -678,6 +704,55 @@ BEGIN
     END CATCH
 END
   
+CREATE OR ALTER PROCEDURE SP_Cadastrar_Tipo_Produto_Completo
+    @Categoria_ID INT,
+    @Nome NVARCHAR(100),
+    @Descricao_Tecnica NVARCHAR(255),
+    @Usa_Adesivo BIT,
+    @Usa_Mascara BIT,
+    @Material_ID_1 INT,           -- Obrigatório
+    @Material_ID_2 INT = NULL,    -- Opcional
+    @Material_ID_3 INT = NULL     -- Opcional
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRANSACTION;
+
+    BEGIN TRY
+        -- 1. Insere o Tipo de Produto
+        INSERT INTO Tipo_Produto (Categoria_ID, Nome, Descricao_Tecnica, Usa_Adesivo, Usa_Mascara)
+        VALUES (@Categoria_ID, @Nome, @Descricao_Tecnica, @Usa_Adesivo, @Usa_Mascara);
+
+        -- Captura o ID do produto que acabou de ser criado
+        DECLARE @NovoProdutoID INT = SCOPE_IDENTITY();
+
+        -- 2. Vincula o primeiro material (Sempre existe)
+        INSERT INTO Tipo_Produto_Material (Tipo_Produto_ID, Material_ID)
+        VALUES (@NovoProdutoID, @Material_ID_1);
+
+        -- 3. Vincula o segundo material (Se houver)
+        IF @Material_ID_2 IS NOT NULL
+        BEGIN
+            INSERT INTO Tipo_Produto_Material (Tipo_Produto_ID, Material_ID)
+            VALUES (@NovoProdutoID, @Material_ID_2);
+        END
+
+        -- 4. Vincula o terceiro material (Se houver)
+        IF @Material_ID_3 IS NOT NULL
+        BEGIN
+            INSERT INTO Tipo_Produto_Material (Tipo_Produto_ID, Material_ID)
+            VALUES (@NovoProdutoID, @Material_ID_3);
+        END
+
+        COMMIT TRANSACTION;
+        PRINT 'Produto e vínculos de materiais cadastrados com sucesso!';
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
+END
+
 CREATE OR ALTER TRIGGER TR_Gerar_Historico_Status
 ON Pedido
 AFTER UPDATE
@@ -731,7 +806,6 @@ BEGIN
     RAISERROR ('Erro: Não é permitido excluir pedidos. Altere o status se necessário.', 16, 1);
 END
 
-USE Controle_Vendas;
 
 CREATE OR ALTER TRIGGER TR_Historico_Status_Insert
 ON Pedido
@@ -742,3 +816,28 @@ BEGIN
     SELECT Pedido_ID, Status_ID, GETDATE(), 1
     FROM inserted;
 END
+
+
+CREATE OR ALTER TRIGGER TR_ArteReprovada_ArquivaPedido
+ON Arquivo_Arte
+AFTER UPDATE, INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- ID 5 = Reprovada (conforme seu INSERT na Status_Arte)
+    -- ID 8 = Arquivado (conforme seu INSERT na Status_Producao)
+    
+    IF EXISTS (SELECT 1 FROM inserted WHERE Status_Arte_ID = 5)
+    BEGIN
+        UPDATE P
+        SET P.Status_ID = 8
+        FROM Pedido P
+        INNER JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID
+        INNER JOIN inserted i ON PI.Item_ID = i.Item_ID
+        WHERE i.Status_Arte_ID = 5;
+        
+        PRINT 'Automação: Pedido arquivado porque a arte foi marcada como Reprovada.';
+    END
+END
+
