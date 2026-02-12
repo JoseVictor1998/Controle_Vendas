@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+ï»¿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ComunicacaoVisual.API.Models;
 
@@ -48,7 +48,7 @@ namespace ComunicacaoVisual.API.Controllers
                         @Observacao_Tecnica = {model.ObservacaoTecnica}, 
                         @Caminho_Foto = {model.CaminhoFoto}");
 
-                return Ok(new { mensagem = "Pedido enviado para a produção com sucesso!" });
+                return Ok(new { mensagem = "Pedido enviado para a produÃ§Ã£o com sucesso!" });
             }
             catch (Exception ex)
             {
@@ -68,7 +68,7 @@ namespace ComunicacaoVisual.API.Controllers
                 @Novo_Status_ID = {model.NovoStatusId}, 
                 @Usuario_ID = {model.UsuarioId}");
 
-                return Ok(new { mensagem = "Status atualizado! O pedido avançou na fila." });
+                return Ok(new { mensagem = "Status atualizado! O pedido avanÃ§ou na fila." });
             }
             catch (Exception ex)
             {
@@ -84,7 +84,7 @@ namespace ComunicacaoVisual.API.Controllers
                 .Include(p => p.Cliente)
                 .FirstOrDefaultAsync(p => p.PedidoId == id);
 
-            if (pedido == null) return NotFound("Pedido não encontrado.");
+            if (pedido == null) return NotFound("Pedido nÃ£o encontrado.");
             return Ok(pedido);
         }
 
@@ -93,8 +93,8 @@ namespace ComunicacaoVisual.API.Controllers
         {
             try
             {
-                // Mudamos para o ID 99 (ou o ID que você criar para 'Oculto')
-                // Isso faz o pedido sair das Views de produção sem apagar os dados
+                // Mudamos para o ID 99 (ou o ID que vocÃª criar para 'Oculto')
+                // Isso faz o pedido sair das Views de produÃ§Ã£o sem apagar os dados
                 await _context.Database.ExecuteSqlInterpolatedAsync($@"
             EXEC SP_Atualizar_Status_Pedido 
                 @Pedido_ID = {id}, 
@@ -125,7 +125,7 @@ namespace ComunicacaoVisual.API.Controllers
             }
         }
 
-        [HttpGet("Fila Impressão")]
+        [HttpGet("Fila ImpressÃ£o")]
 
         public async Task<IActionResult> GetFilaImpressao()
         {
@@ -136,7 +136,7 @@ namespace ComunicacaoVisual.API.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { mensagem = "Erro ao ver a Fila de impressão", erro = ex.Message });
+                return StatusCode(500, new { mensagem = "Erro ao ver a Fila de impressÃ£o", erro = ex.Message });
             }
 
         }
@@ -174,10 +174,10 @@ namespace ComunicacaoVisual.API.Controllers
         {
             try
             {
-                // Começamos pegando a View completa do Contexto
+                // ComeÃ§amos pegando a View completa do Contexto
                 var consulta = _context.VwBuscaRapidaPedidos.AsQueryable();
 
-                // Se o usuário digitou algo no campo de busca, aplicamos o filtro
+                // Se o usuÃ¡rio digitou algo no campo de busca, aplicamos o filtro
                 if (!string.IsNullOrEmpty(filtro))
                 {
                     consulta = consulta.Where(p =>
@@ -225,5 +225,195 @@ namespace ComunicacaoVisual.API.Controllers
             }
 
         }
+
+        [HttpGet("BuscaRapidaPedido")]
+        public async Task<IActionResult> GetBuscaRapidaPedido()
+        {
+            try
+            {
+                var dados = await _context.VwBuscaRapidaPedidos.ToListAsync();
+                return Ok(dados);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    mensagem = "Erro Busca Rapida Pedido",
+                    erro = ex.Message
+                });
+            }
+        }
+
+        [HttpGet("DashboardFinanceiro")]
+        public async Task<IActionResult> GetDashboardFinanceiros()
+        {
+            try
+            {
+                var dados = await _context.VwDashboardFinanceiros.ToListAsync();
+                return Ok(dados); // ðŸ‘ˆ ESTAVA FALTANDO ISSO
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    mensagem = "Erro ao acessar Dashboard Financeiro",
+                    erro = ex.Message
+                });
+            }
+        }
+
+        [HttpGet("DashboardGestao")]
+        public async Task<IActionResult> GetDashboardGestao()
+        {
+            try
+            {
+                var dados = await _context.VwDashboardGestaos.ToListAsync();
+                return Ok(dados);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    mensagem = "Erro ao acessar Dashboard GestÃ£o",
+                    erro = ex.Message
+                });
+            }
+        }
+        [HttpGet("FilaProducaoCompleta")]
+        public async Task<IActionResult> GetFilaProdutoCompleta()
+        {
+            try
+            {
+                var dados = await _context.VwFilaProducaoCompleta.ToListAsync();
+                return Ok(dados);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    mensagem = "Erro em Fila ProduÃ§Ã£o Completa",
+                    erro = ex.Message
+                });
+            }
+        }
+        [HttpGet("HistoricoPedidosCliente")]
+        public async Task<IActionResult> GetHistoricoPedidoCliente()
+        {
+            try
+            {
+                var dados = await _context.VwHistoricoPedidosClientes.ToListAsync();
+                return Ok(dados);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    mensagem = "Erro em Historico Pedidos Cliente",
+                    erro = ex.Message
+                });
+            }
+        }
+        [HttpGet("MeusPedidosVendedor")]
+        public async Task<IActionResult> GetMeusPedidosVendedor()
+        {
+            try
+            {
+                var dados = await _context.VwMeusPedidosVendedors.ToListAsync();
+                return Ok(dados);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    mensagem = "Erro ao acessar Pedidos Vendedor",
+                    erro = ex.Message
+                });
+            }
+        }
+        [HttpGet("MonitoramentoGlobal")]
+        public async Task<IActionResult> GetMonitoramentoGlobal()
+        {
+            try
+            {
+                var dados = await _context.VwMonitoramentoGlobals.ToListAsync();
+                return Ok(dados);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    mensagem = "Erro em Monitoramento Global",
+                    erro = ex.Message
+                });
+            }
+        }
+        [HttpGet("PesquisaClienteVenda")]
+        public async Task<IActionResult> GetPesquisaClienteVenda()
+        {
+            try
+            {
+                var dados = await _context.VwPesquisaClientesVendas.ToListAsync();
+                return Ok(dados);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    mensagem = "Erro em Pesquisa Cliente Venda",
+                    erro = ex.Message
+                });
+            }
+        }
+
+        [HttpPut("Criar Pedido")]
+        public async Task<IActionResult> CriarPedidoComItem([FromBody] CriarPedidoComItemImput model)
+        {
+            try
+            {
+                await _context.Database.ExecuteSqlInterpolatedAsync($@"
+                    EXEC SP_Criar_Pedido_Com_Item 
+                        @Cliente_ID = {model.ClienteId}, 
+                        @OS_Externa = {model.OsExterna}, 
+                        @Vendedor_ID = {model.VendedorID}, 
+                        @Observacao_Geral = {model.ObservacaoGeral}, 
+                        @Tipo_Produto_ID = {model.TipoProdutooId}, 
+                        @Largura = {model.Largura}, 
+                        @Altura = {model.Altura}, 
+                        @Quantidade = {model.Quantidade}, 
+                        @Observacao_Tecnica = {model.ObservacaoTecnica}, 
+                        @Caminho_Foto = {model.CaminhoFoto}");
+                return Ok(new { mensagem = "Pedido criado com item e enviado para produÃ§Ã£o!" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { erro = "Erro ao criar pedido", detalhe = ex.Message });
+            }
+
+        }
+
+        [HttpPut("Atualizar Status Pedido")]
+        public async Task<IActionResult> AtualizarStatusPedido([FromBody] AtualizarStatusPedidoImput model)
+        {
+            try
+            {
+
+                await _context.Database.ExecuteSqlInterpolatedAsync($@"
+                    EXEC SP_Atualizar_Status_Pedido 
+                        @Pedido_ID = {model.PedidoId}, 
+                        @Novo_Status_ID = {model.NovoStatusId}, 
+                        @Usuario_ID = {model.UsuarioId}, 
+                        @Valor_Total = {model.ValorTotal}, 
+                        @Forma_Pagamento = {model.FormaPagamento}");
+                return Ok(new { mensagem = "Status do pedido atualizado com sucesso!" });
+
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { erro = "Erro ao atualizar status do pedido", detalhe = ex.Message });
+
+            }
+
+        }
+
     }
 }
