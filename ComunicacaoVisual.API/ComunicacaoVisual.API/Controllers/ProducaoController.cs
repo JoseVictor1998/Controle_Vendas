@@ -415,5 +415,26 @@ namespace ComunicacaoVisual.API.Controllers
 
         }
 
+        [HttpPut("Vincular Arquivo Arte")]
+        public async Task<IActionResult> VincularArquivoArte([FromBody] VincularArquivoArteInput model)
+        {
+            try
+            {
+                await _context.Database.ExecuteSqlInterpolatedAsync($@"
+                    EXEC SP_Vincular_Arquivo_Arte 
+                        @Item_ID = {model.ItemID}, 
+                        @Nome_Arquivo = {model.NomeArquivo}, 
+                        @Caminho_Arquivo = {model.CaminhoArquivo}, 
+                        @Usuario_ID = {model.UsuarioID}");
+                return Ok(new { mensagem = "Arquivo de arte vinculado ao item com sucesso!" });
+
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { erro = "Erro ao vincular arquivo de arte", detalhe = ex.Message });
+
+            }
+
+        }
     }
 }
