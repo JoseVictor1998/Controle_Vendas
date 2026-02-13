@@ -288,12 +288,19 @@ namespace ComunicacaoVisual.API.Controllers
             }
         }
         [HttpGet("PesquisaClienteVenda")]
-        public async Task<IActionResult> GetPesquisaClienteVenda()
+        public async Task<IActionResult> GetPesquisaClienteVenda([FromQuery] string? filtro)
         {
             try
-            {
-                var dados = await _context.VwPesquisaClientesVendas.ToListAsync();
-                return Ok(dados);
+                        {
+                var consulta = _context.VwPesquisaClientesVendas.AsQueryable();
+                if (!string.IsNullOrEmpty(filtro))
+                {
+                    consulta = consulta.Where(p =>
+                     p.Nome.Contains(filtro) ||
+                    (p.Documento != null && p.Documento.Contains(filtro)));
+                }
+                var resultado = await consulta.ToListAsync();
+                return Ok(resultado);
             }
             catch (Exception ex)
             {
@@ -303,7 +310,9 @@ namespace ComunicacaoVisual.API.Controllers
                     erro = ex.Message
                 });
             }
+
         }
+        
 
         [HttpGet("Fila Arte Finalista Full")]
         public async Task<IActionResult> GetFilaArteFinalistaFull()
