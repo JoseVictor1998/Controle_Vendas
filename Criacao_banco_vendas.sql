@@ -442,7 +442,7 @@ LEFT JOIN Cliente_PF PF ON C.PF_ID = PF.Cliente_PF_ID
 LEFT JOIN Cliente_PJ PJ ON C.PJ_ID = PJ.Cliente_PJ_ID
 JOIN Telefone T ON C.Telefone_ID = T.Telefone_ID
 JOIN Endereco E ON C.Endereco_ID = E.Endereco_ID;
-SELECT * FROM VW_Pesquisa_Clientes_Vendas;
+
 
 
 CREATE OR ALTER VIEW VW_Historico_Pedidos_Cliente AS
