@@ -5,23 +5,22 @@
 */
 
 -- 1. CRIAÇÃO DO BANCO DE DADOS
-
 CREATE DATABASE Controle_Vendas;
-
+GO
 USE Controle_Vendas;
-
+GO
 CREATE TABLE Cliente_PJ(
 Cliente_PJ_ID INT IDENTITY(1,1) PRIMARY KEY,
 CNPJ NVARCHAR (14) NOT NULL UNIQUE,
 Data_Cadastro DATETIME DEFAULT GETDATE() NOT NULL
 );
-
+GO
 CREATE TABLE Cliente_PF(
 Cliente_PF_ID INT IDENTITY(1,1) PRIMARY KEY,
 CPF NVARCHAR (11) NOT NULL UNIQUE,
 Data_Cadastro DATETIME DEFAULT GETDATE() NOT NULL
 );
-
+GO
 
 CREATE TABLE Endereco(
 Endereco_ID INT IDENTITY(1,1) PRIMARY KEY,
@@ -33,13 +32,13 @@ Numero INT NULL,
 Referencia NVARCHAR (255)
 );
 
-
+GO
 CREATE TABLE Telefone(
 Telefone_ID INT IDENTITY (1,1) PRIMARY KEY,
 DDD NVARCHAR(3) NOT NULL,
 Numero NVARCHAR (9) NOT NULL
 );
-
+GO
 CREATE TABLE Clientes (
 Cliente_id INT IDENTITY (1,1) PRIMARY KEY,
 Endereco_ID INT NOT NULL,
@@ -55,7 +54,7 @@ CONSTRAINT FK_Cliente_PJ FOREIGN KEY (PJ_ID) REFERENCES Cliente_PJ(Cliente_PJ_ID
 CONSTRAINT FK_Cliente_PF FOREIGN KEY (PF_ID) REFERENCES Cliente_PF(Cliente_PF_ID),
 CONSTRAINT CK_PJ_PF CHECK ((PJ_ID IS NOT NULL AND PF_ID IS NULL) OR (PJ_ID IS NULL AND PF_ID IS NOT NULL))
 );
-
+GO
 CREATE TABLE Usuario(
 Usuario_ID INT IDENTITY (1,1) PRIMARY KEY,
 Nome NVARCHAR(255) NOT NULL,
@@ -64,14 +63,14 @@ Login NVARCHAR(50) UNIQUE,
 Senha NVARCHAR(255),
 Nivel_Acesso NVARCHAR(20) DEFAULT 'Vendedor'
 );
-
+GO
 CREATE TABLE Categoria_Produtos(
 Categoria_ID INT IDENTITY (1,1) PRIMARY KEY,
 Nome NVARCHAR (100) NOT NULL,
 Descricao NVARCHAR (255) NOT NULL, 
 Ativo BIT NOT NULL DEFAULT 1
 );
-
+GO
 CREATE TABLE Tipo_Produto(
 Tipo_Produto_ID INT IDENTITY (1,1) PRIMARY KEY,
 Categoria_ID INT NOT NULL,
@@ -82,7 +81,7 @@ Usa_Mascara BIT,
 Ativo BIT NOT NULL DEFAULT 1,
 CONSTRAINT FK_Tipo_Produto_Categoria_ID FOREIGN KEY (Categoria_ID) References Categoria_Produtos(Categoria_ID)
 );
-
+GO
 
 
 CREATE TABLE Status_Producao(
@@ -91,7 +90,7 @@ Nome NVARCHAR (100) NOT NULL,
 Ordem INT NOT NULL,
 Ativo BIT NOT NULL DEFAULT 1
 );
-
+GO
 CREATE TABLE Pedido(
 Pedido_ID INT IDENTITY(1,1) PRIMARY KEY,
 Cliente_ID INT NOT NULL,
@@ -106,7 +105,7 @@ CONSTRAINT FK_Pedido_Cliente_ID FOREIGN KEY (Cliente_ID) REFERENCES Clientes(Cli
 CONSTRAINT FK_Pedido_Status_ID FOREIGN KEY (Status_ID) REFERENCES Status_Producao(Status_ID),
 CONSTRAINT FK_Pedido_Vendedor FOREIGN KEY (Vendedor_ID) REFERENCES Usuario(Usuario_ID)
 );
-
+GO
 CREATE TABLE Pedido_Item(
 Item_ID INT IDENTITY(1,1) PRIMARY KEY,
 Pedido_ID INT NOT NULL,
@@ -120,12 +119,12 @@ CONSTRAINT FK_Pedido_Item_Pedido_ID FOREIGN KEY (Pedido_ID) REFERENCES Pedido(Pe
 CONSTRAINT FK_Pedido_Item_Tipo_Produto_ID FOREIGN KEY (Tipo_Produto_ID) REFERENCES Tipo_Produto(Tipo_Produto_ID)
 );
 
-
+GO
 CREATE TABLE Status_Arte(
 Status_Arte_ID INT IDENTITY (1,1) PRIMARY KEY,
 Nome NVARCHAR(100) NOT NULL
 );
-
+GO
 CREATE TABLE Arquivo_Arte(
 Arquivo_ID INT IDENTITY (1,1) PRIMARY KEY ,
 Item_ID INT NOT NULL,
@@ -136,7 +135,7 @@ CONSTRAINT FK_Arquivo_Arte_Item_ID FOREIGN KEY (Item_ID) REFERENCES Pedido_Item(
 CONSTRAINT FK_Arquivo_Arte_Status_Arte_ID FOREIGN KEY (Status_Arte_ID) REFERENCES Status_Arte(Status_Arte_ID)
 );
 
-
+GO
 CREATE TABLE Historico_Status(
 Historico_ID INT IDENTITY (1,1) PRIMARY KEY ,
 Pedido_ID INT NOT NULL,
@@ -147,14 +146,14 @@ CONSTRAINT FK_Historico_Status_Pedido_ID FOREIGN KEY (Pedido_ID) REFERENCES Pedi
 CONSTRAINT FK_Historico_Status_Status_ID FOREIGN KEY (Status_ID) REFERENCES Status_Producao(Status_ID),
 CONSTRAINT FK_Historico_StatusT_Usuario_ID FOREIGN KEY (Usuario_ID) REFERENCES Usuario(Usuario_ID)
 );
-
+GO
 CREATE TABLE Material(
 Material_ID INT IDENTITY (1,1) PRIMARY KEY,
 Nome NVARCHAR(50) NOT NULL,
 Descricao NVARCHAR(255),
 Ativo BIT NOT NULL DEFAULT 1
 );
-
+GO
 CREATE TABLE Tipo_Produto_Material(
 Tipo_Produto_ID INT NOT NULL,
 Material_ID INT NOT NULL ,
@@ -162,7 +161,7 @@ CONSTRAINT PK_Tipo_Produto_Material PRIMARY KEY (Tipo_Produto_ID, Material_ID),
 CONSTRAINT FK_TPM_Tipo_Produto FOREIGN KEY (Tipo_Produto_ID) REFERENCES Tipo_Produto(Tipo_Produto_ID),
 CONSTRAINT FK_TPM_Material FOREIGN KEY (Material_ID) REFERENCES Material(Material_ID)
 );
-
+GO
 CREATE TABLE Custos_Fixos (
     Custo_ID INT IDENTITY(1,1) PRIMARY KEY,
     Descricao NVARCHAR(100) NOT NULL,
@@ -170,21 +169,21 @@ CREATE TABLE Custos_Fixos (
     Data_Vencimento DATE NOT NULL,
     Status_Pagamento BIT DEFAULT 0 -- 0: Pendente, 1: Pago
 );
-
+GO
 
 INSERT INTO Usuario (Nome, Funcao, Login, Senha) VALUES
 ('Administrador', 'Gestão', 'admin', 'admin123'),
 ('Jose Porcellani', 'Produção', 'jose', '123'),
 ('Vendedor Teste', 'Comercial', 'venda', 'venda123'),
 ('Designer Teste', 'Arte', 'arte', 'arte123');
-
+GO
 -- 1. Ajustar Usuários para suportar os novos setores
 -- Já incluímos: Admin, Vendedor, Arte, Impressao
 UPDATE Usuario SET Nivel_Acesso = 'Admin' WHERE Login = 'admin';
 UPDATE Usuario SET Nivel_Acesso = 'Arte' WHERE Login = 'arte';
 UPDATE Usuario SET Nivel_Acesso = 'Impressao' WHERE Login = 'jose';
 UPDATE Usuario SET Nivel_Acesso = 'Vendedor' WHERE Login = 'venda';
-
+GO
 
 INSERT INTO Status_Producao (Nome, Ordem)
 VALUES 
@@ -195,8 +194,8 @@ VALUES
 ('Em Producao', 5),
 ('Finalizada', 6),
 ('Entregue', 7),
-('Arquivado', 8),
-
+('Arquivado', 8);
+GO
 
 INSERT INTO Status_Arte (Nome)
 Values
@@ -205,6 +204,8 @@ Values
 ('Em Correção'),
 ('Aprovada'),
 ('Reprovada');
+GO
+
 
 INSERT INTO Categoria_Produtos (Nome, Descricao)
 VALUES
@@ -214,7 +215,7 @@ VALUES
 ('Metal', 'Produtos fabricados em metal'),
 ('UV','Produtos fabricados em impressão UV');
  
-
+ GO
 
 INSERT INTO Material (Nome, Descricao)
 VALUES 
@@ -235,9 +236,9 @@ VALUES
 ('Alumínio', 'Chapa de alumínio'),--ID 15
 ('Tubo 2"', 'Tubo metálico 2 polegadas'),--ID 16
 ('Tubo 2.5"', 'Tubo metálico 2.5 polegadas');--ID 17
+GO
 
-
-
+ 
 INSERT INTO Tipo_Produto (Categoria_ID, Nome, Descricao_Tecnica, Usa_Adesivo, Usa_Mascara) VALUES 
 (1, 'Adesivo Vinil Impresso', 'Impressão digital em vinil fosco', 1, 0), -- ID 1
 (1, 'Adesivo Refletivo Impresso', 'Impressão digital em adesivo refletivo', 1, 0), -- ID 2
@@ -279,6 +280,7 @@ INSERT INTO Tipo_Produto (Categoria_ID, Nome, Descricao_Tecnica, Usa_Adesivo, Us
 (2, 'Placa Chapa 18 + Poste 2" + Refletivo Amarelo', 'Sinalização advertência ', 1, 0), -- ID 38
 (2, 'Placa Chapa 18 + Poste 2,5" + Refletivo Amarelo', 'Sinalização advertência ', 1, 0); -- ID 39
 
+GO
 
 -- VINCULANDO MATERIAIS AOS PRODUTOS (IDs seguindo a ordem de inserção acima)
 INSERT INTO Tipo_Produto_Material (Tipo_Produto_ID, Material_ID) VALUES
@@ -308,7 +310,7 @@ INSERT INTO Tipo_Produto_Material (Tipo_Produto_ID, Material_ID) VALUES
 (37, 12), (37, 3), (37, 17), -- Galva + Poste 2.5" + Amarelo
 (38, 13), (38, 3), (38, 16), -- Chapa 18 + Poste 2" + Amarelo
 (39, 13), (39, 3), (39, 17); -- Chapa 18 + Poste 2.5" + Amarelo
-
+GO
 
 -- 4. CRIAÇÃO DAS VIEWS (GENTE QUE PRODUZ)
 CREATE OR ALTER VIEW VW_Fila_Arte AS 
@@ -328,6 +330,7 @@ JOIN Tipo_Produto TP ON PI.Tipo_Produto_ID = TP.Tipo_Produto_ID
 LEFT JOIN Arquivo_Arte AA ON PI.Item_ID = AA.Item_ID -- LEFT JOIN não "esconde" o pedido
 LEFT JOIN Status_Arte SA ON AA.Status_Arte_ID = SA.Status_Arte_ID
 WHERE P.Status_ID IN (1, 2, 3); 
+GO
 
 CREATE OR ALTER VIEW VW_Fila_Arte_Finalista_Full AS
 SELECT 
@@ -351,7 +354,7 @@ JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID
 JOIN Tipo_Produto TP ON PI.Tipo_Produto_ID = TP.Tipo_Produto_ID
 LEFT JOIN Arquivo_Arte AA ON PI.Item_ID = AA.Item_ID
 LEFT JOIN Status_Arte SA ON AA.Status_Arte_ID = SA.Status_Arte_ID;
-
+GO
 
 -- VIEW: FILA DE IMPRESSÃO
 CREATE OR ALTER VIEW VW_Fila_Impressao AS 
@@ -374,7 +377,7 @@ JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID
 JOIN Tipo_Produto TP ON PI.Tipo_Produto_ID = TP.Tipo_Produto_ID
 JOIN Arquivo_Arte AA ON PI.Item_ID = AA.Item_ID
 WHERE P.Status_ID = 4;
-
+GO
 -- 1. MONITORAMENTO GLOBAL: O "Onde está meu pedido?" (Visão para o Vendedor/Dono)
 CREATE VIEW VW_Monitoramento_Global AS 
 SELECT P.OS_Externa AS OS, C.Nome AS Cliente, TP.Nome AS Produto, SP.Nome AS Status_Producao, FORMAT(P.Data_Pedido, 'dd/MM/yyyy HH:mm') AS Data_Entrada
@@ -383,7 +386,7 @@ JOIN Clientes C ON P.Cliente_ID = C.Cliente_id
 JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID
 JOIN Tipo_Produto TP ON PI.Tipo_Produto_ID = TP.Tipo_Produto_ID
 JOIN Status_Producao SP ON P.Status_ID = SP.Status_ID;
-
+GO
 -- View de Produção com Foto e SLA (Tempo de produção)
 CREATE OR ALTER VIEW VW_Fila_Producao_Completa AS 
 SELECT 
@@ -400,7 +403,7 @@ JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID
 JOIN Tipo_Produto TP ON PI.Tipo_Produto_ID = TP.Tipo_Produto_ID
 JOIN Usuario U ON P.Vendedor_ID = U.Usuario_ID
 WHERE P.Status_ID IN (4, 5);
-
+GO
 CREATE OR ALTER VIEW VW_Dashboard_Gestao_Ativa AS 
 SELECT 
     SP.Nome AS Etapa,
@@ -410,7 +413,7 @@ LEFT JOIN Pedido P ON SP.Status_ID = P.Status_ID
 -- Filtro para remover os Arquivados da visão de gestão diária
 WHERE SP.Status_ID <> 8
 GROUP BY SP.Nome, SP.Ordem;
-
+GO
 -- View para o Vendedor ver apenas os SEUS pedidos e o status deles
 CREATE OR ALTER VIEW VW_Meus_Pedidos_Vendedor AS
 SELECT 
@@ -423,7 +426,7 @@ SELECT
 FROM Pedido P
 JOIN Clientes C ON P.Cliente_ID = C.Cliente_id
 JOIN Status_Producao SP ON P.Status_ID = SP.Status_ID;
-
+GO
 CREATE OR ALTER VIEW VW_Pesquisa_Clientes_Vendas AS
 SELECT 
     C.Cliente_id AS ID,
@@ -442,7 +445,7 @@ LEFT JOIN Cliente_PF PF ON C.PF_ID = PF.Cliente_PF_ID
 LEFT JOIN Cliente_PJ PJ ON C.PJ_ID = PJ.Cliente_PJ_ID
 JOIN Telefone T ON C.Telefone_ID = T.Telefone_ID
 JOIN Endereco E ON C.Endereco_ID = E.Endereco_ID;
-
+GO
 
 
 CREATE OR ALTER VIEW VW_Historico_Pedidos_Cliente AS
@@ -461,7 +464,7 @@ JOIN Clientes C ON P.Cliente_ID = C.Cliente_id
 JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID
 JOIN Tipo_Produto TP ON PI.Tipo_Produto_ID = TP.Tipo_Produto_ID
 JOIN Status_Producao S ON P.Status_ID = S.Status_ID;
-
+GO
 
 CREATE OR ALTER VIEW VW_Busca_Rapida_Pedido AS
 SELECT
@@ -478,7 +481,7 @@ JOIN Clientes C ON P.Cliente_ID = C.Cliente_id
 JOIN Status_Producao SP ON P.Status_ID = SP.Status_ID
 JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID
 JOIN Tipo_Produto TP ON PI.Tipo_Produto_ID = TP.Tipo_Produto_ID;
-
+GO
 CREATE OR ALTER VIEW VW_Dashboard_Financeiro AS 
 SELECT 
     P.OS_Externa AS OS,
@@ -490,7 +493,7 @@ SELECT
 FROM Pedido P
 JOIN Clientes C ON P.Cliente_ID = C.Cliente_id
 JOIN Status_Producao SP ON P.Status_ID = SP.Status_ID;
-
+GO
 
 -- Nova VIEW para o Dashboard do Patrão (Lucro Líquido)
 CREATE OR ALTER VIEW VW_Dashboard_BI_Gerencial AS
@@ -499,7 +502,7 @@ SELECT
     (SELECT ISNULL(SUM(Valor), 0) FROM Custos_Fixos WHERE MONTH(Data_Vencimento) = MONTH(GETDATE())) AS Total_Custos_Mes,
     ((SELECT ISNULL(SUM(Valor_Total), 0) FROM Pedido WHERE MONTH(Data_Pedido) = MONTH(GETDATE())) - 
      (SELECT ISNULL(SUM(Valor), 0) FROM Custos_Fixos WHERE MONTH(Data_Vencimento) = MONTH(GETDATE()))) AS Lucro_Estimado;
-
+	 GO
 -- View de Alerta de Atrasos para a Gestão
 CREATE OR ALTER VIEW VW_Alertas_SLA AS
 SELECT 
@@ -517,7 +520,7 @@ JOIN Clientes C ON P.Cliente_ID = C.Cliente_id
 JOIN Status_Producao SP ON P.Status_ID = SP.Status_ID
 JOIN Historico_Status H ON P.Pedido_ID = H.Pedido_ID
 WHERE H.Historico_ID = (SELECT MAX(Historico_ID) FROM Historico_Status WHERE Pedido_ID = P.Pedido_ID);
-
+GO
 CREATE OR ALTER PROCEDURE SP_Validar_Login
     @Login NVARCHAR(50),
     @Senha NVARCHAR(255)
@@ -542,7 +545,7 @@ BEGIN
         RAISERROR('Usuário ou Senha inválidos. Tente novamente.', 16, 1);
     END
 END
-
+GO
 CREATE OR ALTER PROCEDURE SP_Cadastrar_Cliente_Completo
     @Nome NVARCHAR(50),
     @Email NVARCHAR(100),
@@ -605,7 +608,7 @@ BEGIN
         RAISERROR (@ErrorMessage, 16, 1);
     END CATCH
 END
-
+GO
 
 CREATE OR ALTER PROCEDURE SP_Criar_Pedido_Com_Item
     @Cliente_ID INT,
@@ -638,7 +641,7 @@ BEGIN
         THROW;
     END CATCH
 END
-
+GO
 
 CREATE OR ALTER PROCEDURE SP_Atualizar_Status_Pedido
    @Pedido_ID INT,
@@ -674,7 +677,7 @@ BEGIN
         THROW;
     END CATCH
 END
- 
+ GO
 CREATE OR ALTER PROCEDURE SP_Vincular_Arquivo_Arte
     @Item_ID INT,
     @Nome_Arquivo NVARCHAR(100), -- Novo campo obrigatório
@@ -705,7 +708,7 @@ BEGIN
         THROW;
     END CATCH
 END
-  
+  GO
 CREATE OR ALTER PROCEDURE SP_Cadastrar_Tipo_Produto_Completo
     @Categoria_ID INT,
     @Nome NVARCHAR(100),
@@ -754,7 +757,7 @@ BEGIN
         THROW;
     END CATCH
 END
-
+GO
 CREATE OR ALTER TRIGGER TR_Gerar_Historico_Status
 ON Pedido
 AFTER UPDATE
@@ -778,7 +781,7 @@ BEGIN
         WHERE i.Status_ID <> d.Status_ID; -- Só grava se o status for realmente diferente
     END
 END
-
+GO
 CREATE OR ALTER TRIGGER TR_Validar_Dimensoes_Item
 ON Pedido_Item
 AFTER INSERT, UPDATE
@@ -798,7 +801,7 @@ BEGIN
         RAISERROR ('Erro de Segurança: Largura e Altura devem ser maiores que zero.', 16, 1);
     END
 END
-
+GO
 CREATE OR ALTER TRIGGER TR_Proibir_Delete_Pedido
 ON Pedido
 FOR DELETE
@@ -808,7 +811,7 @@ BEGIN
     RAISERROR ('Erro: Não é permitido excluir pedidos. Altere o status se necessário.', 16, 1);
 END
 
-
+GO
 CREATE OR ALTER TRIGGER TR_Historico_Status_Insert
 ON Pedido
 AFTER INSERT
@@ -819,7 +822,7 @@ BEGIN
     FROM inserted;
 END
 
-
+GO
 CREATE OR ALTER TRIGGER TR_ArteReprovada_ArquivaPedido
 ON Arquivo_Arte
 AFTER UPDATE, INSERT
@@ -842,4 +845,6 @@ BEGIN
         PRINT 'Automação: Pedido arquivado porque a arte foi marcada como Reprovada.';
     END
 END
+
+
 

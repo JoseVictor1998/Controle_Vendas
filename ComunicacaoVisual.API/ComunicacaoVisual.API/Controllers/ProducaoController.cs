@@ -16,7 +16,7 @@ namespace ComunicacaoVisual.API.Controllers
             _context = context;
         }
 
-        [HttpGet("fila-completa")]
+        [HttpGet("Fila Completa")]
         public async Task<IActionResult> GetFilaCompleta()
         {
             try
@@ -79,7 +79,7 @@ namespace ComunicacaoVisual.API.Controllers
 
       
 
-        [HttpGet("busca-rapida")]
+        [HttpGet("Busca Rapida")]
         public async Task<IActionResult> GetBuscaRapida([FromQuery] string? filtro)
         {
             try
@@ -105,7 +105,7 @@ namespace ComunicacaoVisual.API.Controllers
             }
         }
 
-        [HttpGet("DashboardBIGerencia")]
+        [HttpGet("Dashboard Gerencia")]
 
         public async Task<IActionResult> GetDashboardBIGerencia()
         {
@@ -121,7 +121,7 @@ namespace ComunicacaoVisual.API.Controllers
 
         }
 
-        [HttpGet("AlertaSla")]
+        [HttpGet("Alerta Sla")]
         public async Task<IActionResult> GetAlertaSla()
         {
             try
@@ -136,7 +136,7 @@ namespace ComunicacaoVisual.API.Controllers
 
         }
 
-        [HttpGet("BuscaRapidaPedido")]
+        [HttpGet("Busca Pedido")]
         public async Task<IActionResult> GetBuscaRapidaPedido([FromQuery] string? filtro)
         {
             try
@@ -163,7 +163,7 @@ namespace ComunicacaoVisual.API.Controllers
             }
         }
 
-        [HttpGet("DashboardFinanceiro")]
+        [HttpGet("Dashboard Financeiro")]
         public async Task<IActionResult> GetDashboardFinanceiros()
         {
             try
@@ -198,7 +198,7 @@ namespace ComunicacaoVisual.API.Controllers
                 });
             }
         }
-        [HttpGet("FilaProducaoCompleta")]
+        [HttpGet("Fila Producao Completa")]
         public async Task<IActionResult> GetFilaProdutoCompleta()
         {
             try
@@ -215,7 +215,7 @@ namespace ComunicacaoVisual.API.Controllers
                 });
             }
         }
-        [HttpGet("HistoricoPedidosCliente")]
+        [HttpGet("Historico Pedido Cliente")]
         public async Task<IActionResult> GetHistoricoPedidoCliente([FromQuery] string? filtro)
         {
             try
@@ -243,7 +243,7 @@ namespace ComunicacaoVisual.API.Controllers
         }
 
 
-        [HttpGet("MeusPedidosVendedor")]
+        [HttpGet("Meus Pedidos Vendedor")]
         public async Task<IActionResult> GetMeusPedidosVendedor([FromQuery] int vendedorId, [FromQuery] string? filtro)
         {
             try
@@ -270,7 +270,7 @@ namespace ComunicacaoVisual.API.Controllers
         }
 
 
-        [HttpGet("MonitoramentoGlobal")]
+        [HttpGet("Monitoramento Global")]
         public async Task<IActionResult> GetMonitoramentoGlobal()
         {
             try
@@ -287,7 +287,7 @@ namespace ComunicacaoVisual.API.Controllers
                 });
             }
         }
-        [HttpGet("PesquisaClienteVenda")]
+        [HttpGet("Pesquisa Cliente Vendas")]
         public async Task<IActionResult> GetPesquisaClienteVenda([FromQuery] string? filtro)
         {
             try
@@ -416,7 +416,7 @@ namespace ComunicacaoVisual.API.Controllers
             }
         }
 
-        [HttpPut("atualizar-status")]
+        [HttpPut("Atualizar Status")]
         public async Task<IActionResult> AtualizarStatus([FromBody] AtualizarStatusInput model)
         {
             try
@@ -483,7 +483,7 @@ namespace ComunicacaoVisual.API.Controllers
         }
 
 
-        [HttpDelete("ocultar/{id}")]
+        [HttpDelete("Ocultar/{id}")]
         public async Task<IActionResult> OcultarPedido(int id, int usuarioId)
         {
             try

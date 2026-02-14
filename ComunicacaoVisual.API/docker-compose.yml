@@ -1,0 +1,39 @@
+version: '3.4'
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver_erp
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=Sql#2026!erp
+      - MSSQL_PID=Developer
+    ports:
+      - "1440:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    networks:
+      - erp-network
+
+  comunicacaovisual.api:
+    image: ${DOCKER_REGISTRY-}comunicacaovisualapi
+    build:
+      context: .
+      dockerfile: ComunicacaoVisual.API/Dockerfile
+    ports:
+      - "5001:8080"
+    depends_on:
+      - sqlserver
+    environment:
+      - ASPNETCORE_URLS=http://+:8080
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=Controle_Vendas;User Id=sa;Password=Sql#2026!erp;TrustServerCertificate=True;ConnectRetryCount=10;ConnectRetryInterval=10;
+    networks:
+      - erp-network
+
+volumes:
+  sqlserver_data:
+
+networks:
+  erp-network:
+    driver: bridge
