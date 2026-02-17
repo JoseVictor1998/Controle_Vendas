@@ -63,7 +63,7 @@ namespace ComunicacaoVisual.API.Controllers
             }
         }
 
-        [Authorize(Roles = "God, Admin, Impressor, Vendedor")]
+        [Authorize(Roles = "God, Admin, Impressao, Vendedor")]
         [HttpGet("Fila Impressão")]
 
         public async Task<IActionResult> GetFilaImpressao()
@@ -125,7 +125,7 @@ namespace ComunicacaoVisual.API.Controllers
 
         }
 
-        [Authorize(Roles = "God, Admin, Vendedor, Arte, Impressor, Producao")]
+        [Authorize(Roles = "God, Admin, Vendedor, Arte, Impressao, Producao")]
         [HttpGet("Alerta Sla")]
         public async Task<IActionResult> GetAlertaSla()
         {

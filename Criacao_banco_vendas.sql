@@ -529,10 +529,12 @@ AS
 BEGIN
     SET NOCOUNT ON;
     SELECT 
-        Usuario_ID, 
+        Usuario_ID AS UsuarioId,      -- Alias para bater com a classe C#
         Nome, 
         Funcao,
-        Nivel_Acesso -- Adicione isso para o Role do JWT funcionar
+        Login,
+        Senha,
+        Nivel_Acesso AS NivelAcesso   -- AQUI ESTÁ O SEGREDO!
     FROM Usuario 
     WHERE Login = @Login AND Senha = @Senha;
 END
