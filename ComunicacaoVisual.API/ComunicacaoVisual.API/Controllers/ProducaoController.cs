@@ -1,4 +1,4 @@
-﻿using ComunicacaoVisual.API.Models;
+﻿using ComunicacaoVisual.API.DBModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -18,7 +18,7 @@ namespace ComunicacaoVisual.API.Controllers
         }
 
         [Authorize(Roles = "God, Admin, Producao, Vendedor")]
-        [HttpGet("Fila Completa")]
+        [HttpGet("FilaCompleta")]
         public async Task<IActionResult> GetFilaCompleta()
         {
             try
@@ -47,7 +47,7 @@ namespace ComunicacaoVisual.API.Controllers
         }
 
         [Authorize(Roles = "God, Admin, Arte, Vendedor")]
-        [HttpGet("Fila Arte")]
+        [HttpGet("FilaArte")]
 
         public async Task<IActionResult> GetFilaArte()
         {
@@ -64,7 +64,7 @@ namespace ComunicacaoVisual.API.Controllers
         }
 
         [Authorize(Roles = "God, Admin, Impressao, Vendedor")]
-        [HttpGet("Fila Impressão")]
+        [HttpGet("FilaImpressão")]
 
         public async Task<IActionResult> GetFilaImpressao()
         {
@@ -82,7 +82,7 @@ namespace ComunicacaoVisual.API.Controllers
 
 
         [Authorize(Roles = "God, Admin, Vendedor")]
-        [HttpGet("Busca Rapida")]
+        [HttpGet("BuscaRapida")]
         public async Task<IActionResult> GetBuscaRapida([FromQuery] string? filtro)
         {
             try
@@ -109,7 +109,7 @@ namespace ComunicacaoVisual.API.Controllers
         }
 
         [Authorize(Roles = "God, Admin")]
-        [HttpGet("Dashboard Gerencia")]
+        [HttpGet("DashboardGerencia")]
 
         public async Task<IActionResult> GetDashboardBIGerencia()
         {
@@ -126,7 +126,7 @@ namespace ComunicacaoVisual.API.Controllers
         }
 
         [Authorize(Roles = "God, Admin, Vendedor, Arte, Impressao, Producao")]
-        [HttpGet("Alerta Sla")]
+        [HttpGet("AlertaSla")]
         public async Task<IActionResult> GetAlertaSla()
         {
             try
@@ -142,7 +142,7 @@ namespace ComunicacaoVisual.API.Controllers
         }
 
         [Authorize(Roles = "God, Admin, Vendedor")]
-        [HttpGet("Busca Pedido")]
+        [HttpGet("BuscaPedido")]
         public async Task<IActionResult> GetBuscaRapidaPedido([FromQuery] string? filtro)
         {
             try
@@ -170,7 +170,7 @@ namespace ComunicacaoVisual.API.Controllers
         }
 
         [Authorize(Roles = "God, Admin")]
-        [HttpGet("Dashboard Financeiro")]
+        [HttpGet("DashboardFinanceiro")]
         public async Task<IActionResult> GetDashboardFinanceiros()
         {
             try
@@ -188,7 +188,7 @@ namespace ComunicacaoVisual.API.Controllers
             }
         }
         [Authorize(Roles = "God, Admin")]
-        [HttpGet("Dashboard Gestao")]
+        [HttpGet("DashboardGestao")]
         public async Task<IActionResult> GetDashboardGestaoAtiva()
         {
             try
@@ -207,7 +207,7 @@ namespace ComunicacaoVisual.API.Controllers
         }
 
         [Authorize(Roles = "God, Admin, Producao")]
-        [HttpGet("Fila Producao Completa")]
+        [HttpGet("FilaProducaoCompleta")]
         public async Task<IActionResult> GetFilaProdutoCompleta()
         {
             try
@@ -226,7 +226,7 @@ namespace ComunicacaoVisual.API.Controllers
         }
 
         [Authorize(Roles = "God, Admin, Vendedor")]
-        [HttpGet("Historico Pedido Cliente")]
+        [HttpGet("HistoricoPedidoCliente")]
         public async Task<IActionResult> GetHistoricoPedidoCliente([FromQuery] string? filtro)
         {
             try
@@ -254,7 +254,7 @@ namespace ComunicacaoVisual.API.Controllers
         }
 
         [Authorize(Roles = "God, Admin, Vendedor")]
-        [HttpGet("Meus Pedidos Vendedor")]
+        [HttpGet("MeusPedidosVendedor")]
         public async Task<IActionResult> GetMeusPedidosVendedor([FromQuery] int vendedorId, [FromQuery] string? filtro)
         {
             try
@@ -293,7 +293,7 @@ namespace ComunicacaoVisual.API.Controllers
         }
 
         [Authorize(Roles = "God, Admin, Vendedor")]
-        [HttpGet("Monitoramento Global")]
+        [HttpGet("MonitoramentoGlobal")]
         public async Task<IActionResult> GetMonitoramentoGlobal()
         {
             try
@@ -312,7 +312,7 @@ namespace ComunicacaoVisual.API.Controllers
         }
 
         [Authorize(Roles = "God, Admin, Vendedor")]
-        [HttpGet("Pesquisa Cliente Vendas")]
+        [HttpGet("PesquisaClienteVendas")]
         public async Task<IActionResult> GetPesquisaClienteVenda([FromQuery] string? filtro)
         {
             try
@@ -339,7 +339,7 @@ namespace ComunicacaoVisual.API.Controllers
         }
 
         [Authorize(Roles = "God, Admin, Arte")]
-        [HttpGet("Fila Arte Finalista Full")]
+        [HttpGet("FilaArteFinalistaFull")]
         public async Task<IActionResult> GetFilaArteFinalistaFull()
         {
             try
@@ -358,7 +358,7 @@ namespace ComunicacaoVisual.API.Controllers
         }
 
         [Authorize(Roles = "God, Admin, Vendedor")]
-        [HttpPost("Criar Pedido")]
+        [HttpPost("CriarPedido")]
         public async Task<IActionResult> CriarPedidoComItem([FromBody] CriarPedidoComItemInput model)
         {
             try
@@ -385,25 +385,27 @@ namespace ComunicacaoVisual.API.Controllers
         }
 
         [Authorize(Roles = "God")] // A trava de segurança para o seu nível geral
-        [HttpPost("Cadastrar Usuario")]
-        public async Task<IActionResult> CadastrarUsuario([FromBody] Usuario novoUsuario)
+        [HttpPost("CadastrarUsuario")]
+       public async Task<IActionResult> CadastrarUsuario([FromBody] CadastrarUsuarioInput model)
         {
             try
             {
-                // O EF insere os dados diretamente na tabela 'Usuario' que você já tem
-                _context.Usuarios.Add(novoUsuario);
-                await _context.SaveChangesAsync();
-
+                await _context.Database.ExecuteSqlInterpolatedAsync($@"
+                    EXEC SP_Cadastrar_Usuario 
+                        @Nome = {model.Nome}, 
+                        @Login = {model.Login}, 
+                        @Senha = {model.Senha}, 
+                        @NivelAcesso = {model.Nivel_Acesso}");
                 return Ok(new { mensagem = "Usuário cadastrado com sucesso!" });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { erro = "Erro ao cadastrar", detalhe = ex.Message });
+                return StatusCode(500, new { erro = "Erro ao cadastrar usuário", detalhe = ex.Message });
             }
         }
 
-        [Authorize(Roles = "God, Admin, Vendedor")]
-        [HttpPost("Cadastrar Cliente")]
+        [Authorize(Roles = "God,Admin,Vendedor")]
+        [HttpPost("CadastrarCliente")]
 
         public async Task<IActionResult> CadastrarCliente([FromBody] CadastrarClienteCompletoInput model)
         {
@@ -432,7 +434,7 @@ namespace ComunicacaoVisual.API.Controllers
         }
 
         [Authorize(Roles = "God, Admin, Vendedor")]
-        [HttpPost("Cadastrar Pedido")]
+        [HttpPost("CadastrarPedido")]
         public async Task<IActionResult> CadastrarPedido([FromBody] PedidoInputModel model)
         {
             try
@@ -460,7 +462,7 @@ namespace ComunicacaoVisual.API.Controllers
         }
 
         [Authorize(Roles = "God, Admin, Producao, Impressor, Arte")]
-        [HttpPut("Atualizar Status")]
+        [HttpPut("AtualizarStatus")]
         public async Task<IActionResult> AtualizarStatus([FromBody] AtualizarStatusInput model)
         {
             try
@@ -481,7 +483,7 @@ namespace ComunicacaoVisual.API.Controllers
         }
 
         [Authorize(Roles = "God, Admin, Arte")]
-        [HttpPut("Vincular Arquivo Arte")]
+        [HttpPut("VincularArquivoArte")]
         public async Task<IActionResult> VincularArquivoArte([FromBody] VincularArquivoArteInput model)
         {
             try
@@ -504,7 +506,7 @@ namespace ComunicacaoVisual.API.Controllers
         }
 
         [Authorize(Roles = "God, Admin, Vendedor")]
-        [HttpPut("Atualizar Status Pedido Entregue")]
+        [HttpPut("AtualizarStatusPedidoEntregue")]
         public async Task<IActionResult> AtualizarStatusPedido([FromBody] AtualizarStatusPedidoInput model)
         {
             try

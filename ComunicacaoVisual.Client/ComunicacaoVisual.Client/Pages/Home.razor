@@ -1,0 +1,68 @@
+﻿@page "/"
+@inject IJSRuntime JS
+@inject NavigationManager Nav
+
+<PageTitle>Home - Sistema ERP</PageTitle>
+
+<div class="container mt-5">
+    @if (!string.IsNullOrEmpty(userName))
+    {
+        <div class="card shadow-sm border-0 text-center">
+            <div class="card-body">
+                <h1 class="display-4">Bem-vindo, @userName!</h1>
+                <p class="lead">Setor: <span class="badge bg-primary">@userLevel</span></p>
+                <hr />
+                <p>O que vamos produzir hoje?</p>
+                
+                <div class="d-grid gap-2 d-md-block">
+                    @if (userLevel == "Impressao" || userLevel == "Admin" || userLevel == "God")
+                    {
+                        <button class="btn btn-outline-primary m-1" @onclick='() => Nav.NavigateTo("/fila-impressao")'>
+                            Fila de Impressão
+                        </button>
+                    }
+
+                    @if (userLevel == "Arte" || userLevel == "Admin" || userLevel == "God")
+                    {
+                        <button class="btn btn-outline-info m-1" @onclick='() => Nav.NavigateTo("/fila-arte")'>
+                            Fila de Arte
+                        </button>
+                    }
+
+                    @if (userLevel == "Admin" || userLevel == "God")
+                    {
+                        <button class="btn btn-outline-danger m-1" @onclick='() => Nav.NavigateTo("/gestao")'>
+                            Gestão de Vendas
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <p>Carregando dados do usuário...</p>
+    }
+</div>
+
+@code {
+    private string? userName;
+    private string? userLevel;
+
+    protected override async Task OnInitializedAsync()
+    {
+        userName = await JS.InvokeAsync<string>("localStorage.getItem", "userName");
+        userLevel = await JS.InvokeAsync<string>("localStorage.getItem", "userLevel");
+    }
+
+    // ADICIONE ESTE BLOCO AQUI PARA ATUALIZAR A TELA AUTOMATICAMENTE
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            userName = await JS.InvokeAsync<string>("localStorage.getItem", "userName");
+            userLevel = await JS.InvokeAsync<string>("localStorage.getItem", "userLevel");
+            StateHasChanged(); // Avisa o Blazor para redesenhar a tela
+        }
+    }
+}

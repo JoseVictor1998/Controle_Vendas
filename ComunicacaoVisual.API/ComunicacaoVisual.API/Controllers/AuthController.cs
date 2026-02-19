@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using ComunicacaoVisual.API.Models;
+using ComunicacaoVisual.API.DBModels;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -26,48 +26,73 @@ namespace ComunicacaoVisual.API.Controllers
         {
             try
             {
-                // Usamos SqlQuery para mapear apenas as colunas que a procedure retorna
-                var usuario = (await _context.Database
+                // No AuthController.cs
+                var usuario = _context.Database
                     .SqlQuery<UsuarioLoginDTO>($"EXEC SP_Validar_Login @Login={request.Login}, @Senha={request.Senha}")
-                    .ToListAsync())
+                    .AsEnumerable() // Traz os dados para a memória antes de filtrar
                     .FirstOrDefault();
 
-                if (usuario != null)
-                {
-                    return Ok(new
-                    {
-                        id = usuario.UsuarioId,
-                        nome = usuario.Nome,
-                        nivel = usuario.NivelAcesso, // Aqui você identifica o "Login Deus"
-                        mensagem = "Logado com sucesso!"
-                    });
-                }
+                if (usuario == null)
+                    return Unauthorized(new { mensagem = "Usuário ou senha inválidos." });
 
-                return Unauthorized(new { mensagem = "Usuário ou senha inválidos." });
+                // Criando objeto para gerar token
+                var userParaToken = new Usuario
+                {
+                    Login = request.Login,
+                    NivelAcesso = usuario.NivelAcesso,
+                    UsuarioId = usuario.UsuarioId
+                };
+
+                var tokenString = GerarJwtToken(userParaToken);
+
+                return Ok(new
+                {
+                    id = usuario.UsuarioId,
+                    nome = usuario.Nome,
+                    nivel = usuario.NivelAcesso,
+                    token = tokenString,
+                    mensagem = "Logado com sucesso!"
+                });
             }
             catch (Exception ex)
             {
-                // Captura o RAISERROR da sua procedure
-                return StatusCode(401, new { erro = ex.Message });
+                // Retorna mensagem de erro genérica
+                return StatusCode(500, new { erro = ex.Message });
             }
         }
 
         private string GerarJwtToken(Usuario usuario)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var chave = Encoding.ASCII.GetBytes("HIqZPFh1CXELeez3lXTi");
+
+            // 1. Tenta ler da configuração
+            var jwtKey = _config["Jwt:Key"];
+
+            // 2. Se a configuração vier vazia, usa a chave reserva (Fallback)
+            // Note que aqui NÃO usamos 'var' novamente, apenas atribuímos o valor
+            if (string.IsNullOrWhiteSpace(jwtKey))
+            {
+                jwtKey = "8jU4Cm8P653gAYuvU5p1_Segredo2026_Longa";
+            }
+
+            var chave = Encoding.UTF8.GetBytes(jwtKey);
+
+            // Definindo claims (informações do usuário no token)
+            var claims = new[]
+            {
+        new Claim(ClaimTypes.Name, usuario.Login ?? ""),
+        new Claim(ClaimTypes.Role, usuario.NivelAcesso ?? "Vendedor"),
+        new Claim("UsuarioId", usuario.UsuarioId.ToString())
+    };
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
-                Subject = new ClaimsIdentity(new[]
-                {
-            // O ?? "" remove o aviso de erro de nulo
-            new Claim(ClaimTypes.Name, usuario.Login ?? ""),
-            new Claim(ClaimTypes.Role, usuario.NivelAcesso ?? "Vendedor"),
-            new Claim("UsuarioId", usuario.UsuarioId.ToString())
-        }),
+                Subject = new ClaimsIdentity(claims),
                 Expires = DateTime.UtcNow.AddHours(10),
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(chave), SecurityAlgorithms.HmacSha256Signature)
+                SigningCredentials = new SigningCredentials(
+                    new SymmetricSecurityKey(chave),
+                    SecurityAlgorithms.HmacSha256Signature
+                )
             };
 
             var token = tokenHandler.CreateToken(tokenDescriptor);
@@ -75,6 +100,7 @@ namespace ComunicacaoVisual.API.Controllers
         }
     }
 
+    // DTO para login recebido do cliente
     public class LoginRequest
     {
         public required string Login { get; set; }

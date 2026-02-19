@@ -1,0 +1,104 @@
+﻿@page "/fila-impressao"
+@using ComunicacaoVisual.Client.Models
+@inject HttpClient Http
+@inject IJSRuntime JS
+
+<h3>Fila de Impressão Ativa</h3>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>OS</th>
+            <th>Amostra</th>
+            <th>Produto</th>
+            <th>Material</th>
+            <th>Medidas</th>
+            <th>Ação</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (pedidos != null)
+        {
+            @foreach (var p in pedidos)
+            {
+                <tr>
+                    <td><strong>@p.OS</strong></td>
+                    <td>
+                        @if (!string.IsNullOrEmpty(p.Caminho_Foto))
+                        {
+                            <img src="@p.Caminho_Foto" style="width: 80px; height: 80px; object-fit: cover; border-radius: 5px;" />
+                        }
+                        else
+                        {
+                            <span class="text-muted small">Sem foto</span>
+                        }
+                    </td>
+                    <td>
+                        <strong>@p.Produto</strong><br />
+                        <small class="text-muted">@p.Observacao_Geral</small><br />
+                        <small class="text-danger"><em>@p.Descricao_Tecnica</em></small>
+                    </td>
+                    <td>@p.Material_Base</td>
+                    <td>@p.Largura x @p.Altura (@p.Quantidade un)</td>
+                    <td>
+                        <div class="btn-group">
+                            <a href="@p.Link_Arte" target="_blank" class="btn btn-outline-info btn-sm">Abrir Arte</a>
+                            @* Botão que muda o status para 'Em Producao' (ID 5) *@
+                            <button class="btn btn-success btn-sm" @onclick="() => ConcluirImpressao(p.OS)">
+                                Pronto
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+
+@code {
+    private List<FilaImpressaoDTO>? pedidos;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("localStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            pedidos = await Http.GetFromJsonAsync<List<FilaImpressaoDTO>>("api/Producao/Fila Impressão");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Erro: " + ex.Message);
+            pedidos = new List<FilaImpressaoDTO>();
+        }
+    }
+
+    private async Task MudarParaProducao(string os)
+    {
+        var confirmar = await JS.InvokeAsync<bool>("confirm", $"Deseja enviar a OS {os} para Acabamento?");
+        if (confirmar)
+        {
+            // Lógica para chamar a API e mudar o status virá aqui
+            Console.WriteLine("Mudando status da OS: " + os);
+        }
+    }
+    private async Task ConcluirImpressao(string os)
+    {
+        var confirmar = await JS.InvokeAsync<bool>("confirm", $"A OS {os} foi impressa e está pronta para o acabamento?");
+    
+        if (confirmar)
+        {
+            // Precisamos do ID do pedido. Como na View temos a OS (string),
+            // a API cuidará de localizar o ID correto.
+            var dados = new { PedidoId = 0, NovoStatusId = 5, UsuarioId = 1, OS = os };
+        
+            var response = await Http.PutAsJsonAsync("api/Producao/Atualizar Status", dados);
+
+            if (response.IsSuccessStatusCode)
+            {
+                await JS.InvokeVoidAsync("alert", "Sucesso! O pedido foi para a próxima etapa.");
+                pedidos?.RemoveAll(x => x.OS == os); // Remove da tela na hora
+            }
+        }
+    }
+}
