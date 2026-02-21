@@ -3,8 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 
-// APELIDO PARA O SWAGGER: Apontamos para o nível anterior para evitar o erro
-// Mudamos o apelido para um nível acima para fugir do erro de "Models"
+
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -25,28 +24,61 @@ builder.Services.AddDbContext<ComunicacaoVisual.API.DBModels.ControleVendasConte
 
 
 
-// 1. Definição da Chave (Lógica limpa sem duplicidade)
-var jwtKey = builder.Configuration["Jwt:Key"]
-             ?? builder.Configuration["Jwt__Key"]
-             ?? "8jU4Cm8P653gAYuvU5p1_Segredo2026_Longa";
+var jwtKey = builder.Configuration["Jwt:Key"];
+Console.WriteLine("JWT KEY (Program.cs): " + jwtKey);
+if (string.IsNullOrWhiteSpace(jwtKey))
+    throw new Exception("Jwt:Key NÃO carregou. Verifique Jwt__Key no docker-compose e appsettings.json.");
 
-// 2. Transformação em Bytes usando UTF8
 var chave = Encoding.UTF8.GetBytes(jwtKey);
 
-// 3. Configuração da Autenticação
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options => {
+    .AddJwtBearer(options =>
+    {
+        options.RequireHttpsMetadata = false;
+        options.SaveToken = true;
+
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var header = context.Request.Headers.Authorization.ToString();
+                Console.WriteLine($"AUTH HEADER RAW: '{header}'");
+
+                // Se o middleware já parseou, vai estar aqui
+                var t = context.Token;
+
+                // Se não parseou, tenta extrair só para LOG (não setar)
+                if (string.IsNullOrWhiteSpace(t) && header.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+                    t = header.Substring("Bearer ".Length);
+
+                t = t?.Trim();
+
+                if (string.IsNullOrWhiteSpace(t))
+                {
+                    Console.WriteLine("JWT: vazio");
+                }
+                else
+                {
+                    var parts = t.Split('.');
+                    Console.WriteLine($"JWT: len={t.Length} parts={parts.Length}");
+                    Console.WriteLine($"JWT first10='{t.Substring(0, Math.Min(10, t.Length))}' last10='{t.Substring(Math.Max(0, t.Length - 10))}'");
+                }
+
+                return Task.CompletedTask;
+            },
+
+
+        };
+
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(chave),
 
-            // Mantemos estas como 'false' para evitar erros de ambiente no Docker
             ValidateIssuer = false,
             ValidateAudience = false,
-            ValidateLifetime = false,
 
-            // Zera a tolerância de tempo para validação imediata
+            ValidateLifetime = true,
             ClockSkew = TimeSpan.Zero
         };
     });
@@ -69,7 +101,7 @@ builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSwaggerGen(options =>
 {
-    // Usamos 'dynamic' para forçar o VS a ignorar o erro de namespace na compilação
+    
     options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
     {
         Title = "ComunicacaoVisual API",
@@ -84,7 +116,10 @@ builder.Services.AddSwaggerGen(options =>
         BearerFormat = "JWT",
         In = Microsoft.OpenApi.Models.ParameterLocation.Header,
         Description = "Coloque apenas o token JWT abaixo."
+
     });
+
+    options.OperationFilter<SwaggerAuthorizeCheckOperationFilter>();
 
     options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
     {
@@ -108,6 +143,19 @@ app.UseSwaggerUI();
 
 
 app.UseCors("PermitirTudo");
+
+app.Use(async (context, next) =>
+{
+    Console.WriteLine($"AUTH HEADER RAW: '{context.Request.Headers.Authorization}'");
+    await next();
+});
+
+app.Use(async (context, next) =>
+{
+    var auth = context.Request.Headers.Authorization.ToString();
+    Console.WriteLine($"AUTH HEADER RAW: '{auth}'");
+    await next();
+});
 
 app.UseAuthentication();
 app.UseAuthorization();

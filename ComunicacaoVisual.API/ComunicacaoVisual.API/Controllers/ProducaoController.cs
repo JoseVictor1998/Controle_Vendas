@@ -17,7 +17,7 @@ namespace ComunicacaoVisual.API.Controllers
             _context = context;
         }
 
-        [Authorize(Roles = "God, Admin, Producao, Vendedor")]
+        [Authorize(Roles = "God,Admin,Producao,Vendedor")]
         [HttpGet("FilaCompleta")]
         public async Task<IActionResult> GetFilaCompleta()
         {
@@ -46,7 +46,7 @@ namespace ComunicacaoVisual.API.Controllers
             return Ok(pedido);
         }
 
-        [Authorize(Roles = "God, Admin, Arte, Vendedor")]
+        [Authorize(Roles = "God,Admin,Arte,Vendedor")]
         [HttpGet("FilaArte")]
 
         public async Task<IActionResult> GetFilaArte()
@@ -63,8 +63,8 @@ namespace ComunicacaoVisual.API.Controllers
             }
         }
 
-        [Authorize(Roles = "God, Admin, Impressao, Vendedor")]
-        [HttpGet("FilaImpressão")]
+        [Authorize(Roles = "God,Admin,Impressao,Vendedor")]
+        [HttpGet("FilaImpressao")]
 
         public async Task<IActionResult> GetFilaImpressao()
         {
@@ -81,7 +81,7 @@ namespace ComunicacaoVisual.API.Controllers
         }
 
 
-        [Authorize(Roles = "God, Admin, Vendedor")]
+        [Authorize(Roles = "God,Admin,Vendedor")]
         [HttpGet("BuscaRapida")]
         public async Task<IActionResult> GetBuscaRapida([FromQuery] string? filtro)
         {
@@ -108,7 +108,7 @@ namespace ComunicacaoVisual.API.Controllers
             }
         }
 
-        [Authorize(Roles = "God, Admin")]
+        [Authorize(Roles = "God,Admin")]
         [HttpGet("DashboardGerencia")]
 
         public async Task<IActionResult> GetDashboardBIGerencia()
@@ -125,7 +125,7 @@ namespace ComunicacaoVisual.API.Controllers
 
         }
 
-        [Authorize(Roles = "God, Admin, Vendedor, Arte, Impressao, Producao")]
+        [Authorize(Roles = "God,Admin,Vendedor,Arte,Impressao,Producao")]
         [HttpGet("AlertaSla")]
         public async Task<IActionResult> GetAlertaSla()
         {
@@ -141,7 +141,7 @@ namespace ComunicacaoVisual.API.Controllers
 
         }
 
-        [Authorize(Roles = "God, Admin, Vendedor")]
+        [Authorize(Roles = "God,Admin,Vendedor")]
         [HttpGet("BuscaPedido")]
         public async Task<IActionResult> GetBuscaRapidaPedido([FromQuery] string? filtro)
         {
@@ -169,7 +169,7 @@ namespace ComunicacaoVisual.API.Controllers
             }
         }
 
-        [Authorize(Roles = "God, Admin")]
+        [Authorize(Roles = "God,Admin")]
         [HttpGet("DashboardFinanceiro")]
         public async Task<IActionResult> GetDashboardFinanceiros()
         {
@@ -187,7 +187,7 @@ namespace ComunicacaoVisual.API.Controllers
                 });
             }
         }
-        [Authorize(Roles = "God, Admin")]
+        [Authorize(Roles = "God,Admin")]
         [HttpGet("DashboardGestao")]
         public async Task<IActionResult> GetDashboardGestaoAtiva()
         {
@@ -206,7 +206,7 @@ namespace ComunicacaoVisual.API.Controllers
             }
         }
 
-        [Authorize(Roles = "God, Admin, Producao")]
+        [Authorize(Roles = "God,Admin,Producao")]
         [HttpGet("FilaProducaoCompleta")]
         public async Task<IActionResult> GetFilaProdutoCompleta()
         {
@@ -225,7 +225,7 @@ namespace ComunicacaoVisual.API.Controllers
             }
         }
 
-        [Authorize(Roles = "God, Admin, Vendedor")]
+        [Authorize(Roles = "God,Admin,Vendedor")]
         [HttpGet("HistoricoPedidoCliente")]
         public async Task<IActionResult> GetHistoricoPedidoCliente([FromQuery] string? filtro)
         {
@@ -253,7 +253,7 @@ namespace ComunicacaoVisual.API.Controllers
             }
         }
 
-        [Authorize(Roles = "God, Admin, Vendedor")]
+        [Authorize(Roles = "God,Admin,Vendedor")]
         [HttpGet("MeusPedidosVendedor")]
         public async Task<IActionResult> GetMeusPedidosVendedor([FromQuery] int vendedorId, [FromQuery] string? filtro)
         {
@@ -292,7 +292,7 @@ namespace ComunicacaoVisual.API.Controllers
             }
         }
 
-        [Authorize(Roles = "God, Admin, Vendedor")]
+        [Authorize(Roles = "God,Admin,Vendedor")]
         [HttpGet("MonitoramentoGlobal")]
         public async Task<IActionResult> GetMonitoramentoGlobal()
         {
@@ -311,7 +311,7 @@ namespace ComunicacaoVisual.API.Controllers
             }
         }
 
-        [Authorize(Roles = "God, Admin, Vendedor")]
+        [Authorize(Roles = "God,Admin,Vendedor")]
         [HttpGet("PesquisaClienteVendas")]
         public async Task<IActionResult> GetPesquisaClienteVenda([FromQuery] string? filtro)
         {
@@ -338,7 +338,7 @@ namespace ComunicacaoVisual.API.Controllers
 
         }
 
-        [Authorize(Roles = "God, Admin, Arte")]
+        [Authorize(Roles = "God,Admin,Arte")]
         [HttpGet("FilaArteFinalistaFull")]
         public async Task<IActionResult> GetFilaArteFinalistaFull()
         {
@@ -357,7 +357,7 @@ namespace ComunicacaoVisual.API.Controllers
             }
         }
 
-        [Authorize(Roles = "God, Admin, Vendedor")]
+        [Authorize(Roles = "God,Admin,Vendedor")]
         [HttpPost("CriarPedido")]
         public async Task<IActionResult> CriarPedidoComItem([FromBody] CriarPedidoComItemInput model)
         {
@@ -433,7 +433,7 @@ namespace ComunicacaoVisual.API.Controllers
 
         }
 
-        [Authorize(Roles = "God, Admin, Vendedor")]
+        [Authorize(Roles = "God,Admin,Vendedor")]
         [HttpPost("CadastrarPedido")]
         public async Task<IActionResult> CadastrarPedido([FromBody] PedidoInputModel model)
         {
@@ -461,7 +461,7 @@ namespace ComunicacaoVisual.API.Controllers
             }
         }
 
-        [Authorize(Roles = "God, Admin, Producao, Impressor, Arte")]
+        [Authorize(Roles = "God,Admin,Producao,Impressor,Arte")]
         [HttpPut("AtualizarStatus")]
         public async Task<IActionResult> AtualizarStatus([FromBody] AtualizarStatusInput model)
         {
@@ -482,7 +482,7 @@ namespace ComunicacaoVisual.API.Controllers
             }
         }
 
-        [Authorize(Roles = "God, Admin, Arte")]
+        [Authorize(Roles = "God,Admin,Arte")]
         [HttpPut("VincularArquivoArte")]
         public async Task<IActionResult> VincularArquivoArte([FromBody] VincularArquivoArteInput model)
         {
@@ -505,7 +505,7 @@ namespace ComunicacaoVisual.API.Controllers
 
         }
 
-        [Authorize(Roles = "God, Admin, Vendedor")]
+        [Authorize(Roles = "God,Admin,Vendedor")]
         [HttpPut("AtualizarStatusPedidoEntregue")]
         public async Task<IActionResult> AtualizarStatusPedido([FromBody] AtualizarStatusPedidoInput model)
         {

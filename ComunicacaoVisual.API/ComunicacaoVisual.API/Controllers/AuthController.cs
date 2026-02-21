@@ -65,19 +65,14 @@ namespace ComunicacaoVisual.API.Controllers
         {
             var tokenHandler = new JwtSecurityTokenHandler();
 
-            // 1. Tenta ler da configuração
             var jwtKey = _config["Jwt:Key"];
+            Console.WriteLine("JWT KEY (AuthController): " + jwtKey);
 
-            // 2. Se a configuração vier vazia, usa a chave reserva (Fallback)
-            // Note que aqui NÃO usamos 'var' novamente, apenas atribuímos o valor
             if (string.IsNullOrWhiteSpace(jwtKey))
-            {
-                jwtKey = "8jU4Cm8P653gAYuvU5p1_Segredo2026_Longa";
-            }
+                throw new Exception("Jwt:Key NÃO carregou no AuthController.");
 
             var chave = Encoding.UTF8.GetBytes(jwtKey);
 
-            // Definindo claims (informações do usuário no token)
             var claims = new[]
             {
         new Claim(ClaimTypes.Name, usuario.Login ?? ""),
