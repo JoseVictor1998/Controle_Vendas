@@ -2,12 +2,11 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-
-
-
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// 1. Configuração do Banco de Dados (SQL Server)
 builder.Services.AddDbContext<ComunicacaoVisual.API.DBModels.ControleVendasContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("DefaultConnection"),
@@ -22,12 +21,9 @@ builder.Services.AddDbContext<ComunicacaoVisual.API.DBModels.ControleVendasConte
     )
 );
 
-
-
-var jwtKey = builder.Configuration["Jwt:Key"];
-Console.WriteLine("JWT KEY (Program.cs): " + jwtKey);
-if (string.IsNullOrWhiteSpace(jwtKey))
-    throw new Exception("Jwt:Key NÃO carregou. Verifique Jwt__Key no docker-compose e appsettings.json.");
+// 2. Configuração de Autenticação JWT
+var jwtKey = builder.Configuration["Jwt:Key"]
+    ?? throw new Exception("Erro Crítico: Jwt:Key não encontrada nas configurações.");
 
 var chave = Encoding.UTF8.GetBytes(jwtKey);
 
@@ -36,56 +32,22 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     {
         options.RequireHttpsMetadata = false;
         options.SaveToken = true;
-
-        options.Events = new JwtBearerEvents
-        {
-            OnMessageReceived = context =>
-            {
-                var header = context.Request.Headers.Authorization.ToString();
-                Console.WriteLine($"AUTH HEADER RAW: '{header}'");
-
-                // Se o middleware já parseou, vai estar aqui
-                var t = context.Token;
-
-                // Se não parseou, tenta extrair só para LOG (não setar)
-                if (string.IsNullOrWhiteSpace(t) && header.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
-                    t = header.Substring("Bearer ".Length);
-
-                t = t?.Trim();
-
-                if (string.IsNullOrWhiteSpace(t))
-                {
-                    Console.WriteLine("JWT: vazio");
-                }
-                else
-                {
-                    var parts = t.Split('.');
-                    Console.WriteLine($"JWT: len={t.Length} parts={parts.Length}");
-                    Console.WriteLine($"JWT first10='{t.Substring(0, Math.Min(10, t.Length))}' last10='{t.Substring(Math.Max(0, t.Length - 10))}'");
-                }
-
-                return Task.CompletedTask;
-            },
-
-
-        };
-
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(chave),
-
             ValidateIssuer = false,
             ValidateAudience = false,
-
             ValidateLifetime = true,
-            ClockSkew = TimeSpan.Zero
+            ClockSkew = TimeSpan.Zero,
+
+            // Mapeamento essencial para Roles (Nível de Acesso)
+            NameClaimType = System.Security.Claims.ClaimTypes.Name,
+            RoleClaimType = System.Security.Claims.ClaimTypes.Role
         };
     });
 
-
-
-
+// 3. Configuração de CORS (Essencial para o Front-end)
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("PermitirTudo", policy =>
@@ -96,39 +58,33 @@ builder.Services.AddCors(options =>
     });
 });
 
+// 4. Configuração de Controllers e Swagger
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-
-builder.Services.AddSwaggerGen(options =>
+builder.Services.AddSwaggerGen(c =>
 {
-    
-    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
-    {
-        Title = "ComunicacaoVisual API",
-        Version = "v1"
-    });
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "ComunicacaoVisual API", Version = "v1" });
 
-    options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    // 1. Define o esquema de segurança (Cria o botão Authorize no topo)
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
+        Description = "JWT Authorization header usando o esquema Bearer. Exemplo: \"12345abcdef\"",
         Name = "Authorization",
-        Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
         Scheme = "bearer",
-        BearerFormat = "JWT",
-        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
-        Description = "Coloque apenas o token JWT abaixo."
-
+        BearerFormat = "JWT"
     });
 
-    options.OperationFilter<SwaggerAuthorizeCheckOperationFilter>();
-
-    options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    // 2. Aplica a exigência de segurança globalmente no Swagger
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
-            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            new OpenApiSecurityScheme
             {
-                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                Reference = new OpenApiReference
                 {
-                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Type = ReferenceType.SecurityScheme,
                     Id = "Bearer"
                 }
             },
@@ -136,27 +92,19 @@ builder.Services.AddSwaggerGen(options =>
         }
     });
 });
+
 var app = builder.Build();
 
-app.UseSwagger();
-app.UseSwaggerUI();
-
+// 5. Pipeline de Execução (Middleware) - A ORDEM IMPORTA!
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 app.UseCors("PermitirTudo");
 
-app.Use(async (context, next) =>
-{
-    Console.WriteLine($"AUTH HEADER RAW: '{context.Request.Headers.Authorization}'");
-    await next();
-});
-
-app.Use(async (context, next) =>
-{
-    var auth = context.Request.Headers.Authorization.ToString();
-    Console.WriteLine($"AUTH HEADER RAW: '{auth}'");
-    await next();
-});
-
+// A ordem correta para Autenticação/Autorização
 app.UseAuthentication();
 app.UseAuthorization();
 

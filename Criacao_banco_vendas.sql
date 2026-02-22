@@ -171,9 +171,14 @@ CREATE TABLE Custos_Fixos (
 );
 GO
 
+Select * FROM Pedido;
+
+
+
 INSERT INTO Usuario (Nome, Funcao, Login, Senha) VALUES
 ('God', 'God', 'God', 'HIqZPFh1CXELeez3lXTi'),
 ('Administrador', 'Gestão', 'admin', 'admin123'),
+('Matheus','Impressao','Mat','mat123'),
 ('Jose Porcellani', 'Produção', 'jose', '123'),
 ('Vendedor Teste', 'Comercial', 'venda', 'venda123'),
 ('Designer Teste', 'Arte', 'arte', 'arte123');
@@ -369,16 +374,18 @@ SELECT
     JOIN Material M  ON TPM.Material_ID = M.Material_ID
     WHERE TPM.Tipo_Produto_ID = TP.Tipo_Produto_ID) AS Material_Base,
     PI.Largura, PI.Altura, PI.Quantidade,
-    AA.Caminho_Arquivo AS Link_Arte,
+    -- TRATAMENTO DE NULO AQUI: Se for nulo, retorna string vazia
+    ISNULL(AA.Caminho_Arquivo, '') AS Link_Arte, 
     P.Observacao_Geral,
     PI.Observacao_Tecnica
 FROM Pedido P
-JOIN Clientes C ON P.Cliente_ID = C.Cliente_ID
+JOIN Clientes C ON P.Cliente_ID = C.Cliente_id
 JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID 
 JOIN Tipo_Produto TP ON PI.Tipo_Produto_ID = TP.Tipo_Produto_ID
-JOIN Arquivo_Arte AA ON PI.Item_ID = AA.Item_ID
+LEFT JOIN Arquivo_Arte AA ON PI.Item_ID = AA.Item_ID 
 WHERE P.Status_ID = 4;
 GO
+
 -- 1. MONITORAMENTO GLOBAL: O "Onde está meu pedido?" (Visão para o Vendedor/Dono)
 CREATE VIEW VW_Monitoramento_Global AS 
 SELECT P.OS_Externa AS OS, C.Nome AS Cliente, TP.Nome AS Produto, SP.Nome AS Status_Producao, FORMAT(P.Data_Pedido, 'dd/MM/yyyy HH:mm') AS Data_Entrada

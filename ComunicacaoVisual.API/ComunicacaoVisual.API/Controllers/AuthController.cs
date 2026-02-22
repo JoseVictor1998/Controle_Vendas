@@ -26,24 +26,17 @@ namespace ComunicacaoVisual.API.Controllers
         {
             try
             {
-                // No AuthController.cs
+                // Executa a Procedure de validação no SQL Server
                 var usuario = _context.Database
                     .SqlQuery<UsuarioLoginDTO>($"EXEC SP_Validar_Login @Login={request.Login}, @Senha={request.Senha}")
-                    .AsEnumerable() // Traz os dados para a memória antes de filtrar
+                    .AsEnumerable()
                     .FirstOrDefault();
 
                 if (usuario == null)
                     return Unauthorized(new { mensagem = "Usuário ou senha inválidos." });
 
-                // Criando objeto para gerar token
-                var userParaToken = new Usuario
-                {
-                    Login = request.Login,
-                    NivelAcesso = usuario.NivelAcesso,
-                    UsuarioId = usuario.UsuarioId
-                };
-
-                var tokenString = GerarJwtToken(userParaToken);
+                // Gera o token baseado nos dados retornados pelo banco
+                var tokenString = GerarJwtToken(usuario);
 
                 return Ok(new
                 {
@@ -56,34 +49,31 @@ namespace ComunicacaoVisual.API.Controllers
             }
             catch (Exception ex)
             {
-                // Retorna mensagem de erro genérica
-                return StatusCode(500, new { erro = ex.Message });
+                return StatusCode(500, new { erro = "Erro interno ao processar login.", detalhe = ex.Message });
             }
         }
 
-        private string GerarJwtToken(Usuario usuario)
+        private string GerarJwtToken(UsuarioLoginDTO usuario)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
 
-            var jwtKey = _config["Jwt:Key"];
-            Console.WriteLine("JWT KEY (AuthController): " + jwtKey);
-
-            if (string.IsNullOrWhiteSpace(jwtKey))
-                throw new Exception("Jwt:Key NÃO carregou no AuthController.");
-
+            // Busca a chave secreta e garante que ela exista
+            var jwtKey = _config["Jwt:Key"] ?? throw new Exception("Configuração Jwt:Key não encontrada.");
             var chave = Encoding.UTF8.GetBytes(jwtKey);
 
+            // Monta as permissões (Claims)
+            // Usamos nomes curtos para bater com o NameClaimType e RoleClaimType do Program.cs
             var claims = new[]
             {
-        new Claim(ClaimTypes.Name, usuario.Login ?? ""),
-        new Claim(ClaimTypes.Role, usuario.NivelAcesso ?? "Vendedor"),
-        new Claim("UsuarioId", usuario.UsuarioId.ToString())
-    };
+                new Claim(JwtRegisteredClaimNames.UniqueName, usuario.Login ?? ""),
+                new Claim(ClaimTypes.Role, usuario.NivelAcesso ?? "Vendedor"),
+                new Claim("UsuarioId", usuario.UsuarioId.ToString())
+            };
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.UtcNow.AddHours(10),
+                Expires = DateTime.UtcNow.AddHours(10), // Token válido por 10 horas
                 SigningCredentials = new SigningCredentials(
                     new SymmetricSecurityKey(chave),
                     SecurityAlgorithms.HmacSha256Signature
@@ -95,7 +85,6 @@ namespace ComunicacaoVisual.API.Controllers
         }
     }
 
-    // DTO para login recebido do cliente
     public class LoginRequest
     {
         public required string Login { get; set; }

@@ -10,7 +10,7 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 // Configuração da sua API no Docker
 builder.Services.AddScoped(sp => new HttpClient
 {
-    BaseAddress = new Uri("http://localhost:5001/")
+    BaseAddress = new Uri("http://localhost:5001/api")
 });
 
 // REGISTRO OBRIGATÓRIO: Isso faz a linha vermelha do AuthService sumir
