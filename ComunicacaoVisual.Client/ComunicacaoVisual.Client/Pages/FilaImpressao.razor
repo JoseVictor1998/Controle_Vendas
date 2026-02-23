@@ -120,7 +120,15 @@
                         </td>
                         <td>
                             <div class="btn-group">
-                                <a href="@p.LinkArte" target="_blank" class="btn btn-outline-info btn-sm">Abrir</a>
+                                 @if (TemLinkValido(p.LinkArte))
+                                {
+                                    <a href="@NormalizarLinkArte(p.LinkArte)" target="_blank" rel="noopener noreferrer" class="btn btn-outline-info btn-sm">Abrir</a>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-outline-secondary btn-sm" disabled title="Link de arte não informado ou inválido">Sem link</button>
+                                }
+
                                 <button class="btn btn-success btn-sm" @onclick="() => Concluir(p.OS)">Concluir</button>
                             </div>
                         </td>
@@ -154,5 +162,28 @@
             var res = await Http.PutAsJsonAsync("api/Producao/AtualizarStatus", new { OS = os, NovoStatusId = 5 });
             if (res.IsSuccessStatusCode) pedidos?.RemoveAll(x => x.OS == os);
         }
+    }
+
+
+             private static bool TemLinkValido(string? linkArte)
+    {
+        if (string.IsNullOrWhiteSpace(linkArte))
+            return false;
+
+        var linkNormalizado = NormalizarLinkArte(linkArte);
+        return Uri.TryCreate(linkNormalizado, UriKind.Absolute, out _);
+    }
+
+    private static string NormalizarLinkArte(string? linkArte)
+    {
+        if (string.IsNullOrWhiteSpace(linkArte))
+            return string.Empty;
+
+        var linkLimpo = linkArte.Trim();
+
+        if (Uri.TryCreate(linkLimpo, UriKind.Absolute, out _))
+            return linkLimpo;
+
+        return $"https://{linkLimpo.TrimStart('/') }";
     }
 }
