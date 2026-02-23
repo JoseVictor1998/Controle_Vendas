@@ -5,164 +5,127 @@
 @inject IJSRuntime JS
 
 <style>
-    /* 1. Cabeçalho em BRANCO */
-    .table-custom thead th {
-        background-color: #1a1a1a;
-        color: white !important; /* Força o branco */
-        padding: 15px;
-        border-bottom: 2px solid #ffc107;
+    .page-container { background-color: #0f172a; min-height: 100vh; padding: 2rem; color: #f8fafc; }
+    
+    .header-section { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+    
+    .new-orders-badge { 
+        background-color: #fedf00; color: #0f172a; padding: 0.5rem 1rem; 
+        border-radius: 9999px; font-weight: bold; display: flex; align-items: center; gap: 0.5rem;
     }
 
-    /* 2. Caixa de Observação ao passar o mouse (Tooltip) */
-    .obs-container {
-        cursor: help;
-        position: relative;
-        display: inline-block;
+    .custom-table { width: 100%; border-collapse: separate; border-spacing: 0 0.75rem; }
+    .custom-table thead th { color: #94a3b8; text-transform: uppercase; font-size: 0.75rem; padding: 1rem; border: none; }
+    
+    .row-base { background-color: #1e293b; transition: all 0.2s; border-radius: 8px; }
+    .row-base:hover { background-color: #334155; transform: scale(1.005); }
+    
+    /* ALERTA DE ATRASO ESTILO BASE 44 */
+    .row-delayed { background-color: rgba(127, 29, 29, 0.3) !important; border-left: 4px solid #ef4444; }
+    .text-delayed { color: #f87171; font-weight: bold; animation: pulse 2s infinite; }
+
+    .material-pill { background-color: #fedf00; color: #0f172a; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 0.8rem; }
+
+    @@keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
     }
 
-    .obs-container:hover .obs-tooltip {
-        display: block;
+    /* TOOLTIP INTERATIVO */
+    .obs-box { cursor: help; position: relative; display: inline-block; }
+    .obs-content { 
+        display: none; position: absolute; z-index: 50; background: #0f172a; border: 1px solid #334155;
+        padding: 1rem; border-radius: 0.5rem; width: 300px; box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.5);
     }
-
-    .obs-tooltip {
-        display: none;
-        position: absolute;
-        z-index: 100;
-        background: #333;
-        color: #fff;
-        padding: 10px;
-        border: 1px solid #ffc107;
-        border-radius: 5px;
-        width: 250px;
-        top: 25px;
-        left: 0;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.5);
-    }
-    /* Estilo Dark Mode para a página */
-    .page-container {
-        background-color: #121212;
-        min-height: 100vh;
-        padding: 20px;
-        color: white;
-    }
-
-    h3 {
-        color: #ffc107;
-        font-weight: bold;
-        margin-bottom: 25px;
-    }
-
-    /* Tabela Estilizada */
-    .table-custom {
-        width: 100%;
-        border-collapse: separate;
-        border-spacing: 0 8px; /* Espaçamento entre as linhas */
-    }
-
-    .table-custom thead th {
-        background-color: #1a1a1a;
-        color: #ffc107;
-        padding: 15px;
-        text-transform: uppercase;
-        font-size: 0.85rem;
-        border: none;
-    }
-
-    /* Linhas com fundo amarelo transparente */
-    .table-custom tbody tr {
-        background-color: rgba(255, 193, 7, 0.1);
-        transition: all 0.2s ease;
-    }
-
-    .table-custom tbody tr:hover {
-        background-color: rgba(255, 193, 7, 0.2);
-        transform: translateY(-2px);
-    }
-
-    .table-custom td {
-        padding: 15px;
-        vertical-align: middle;
-        border: none;
-    }
-
-    /* Ajustes de texto */
-    .text-muted-light { color: #aaaaaa !important; }
-    .obs-tecnica { color: #ff6b6b; font-style: italic; }
-    .badge-material { background-color: #ffc107; color: #000; font-weight: bold; padding: 5px 10px; border-radius: 4px; }
+    .obs-box:hover .obs-content { display: block; }
 </style>
 
 <div class="page-container">
-    <h3>Fila de Impressão Ativa</h3>
+    <div class="header-section">
+        <div>
+            <h1 style="font-size: 1.5rem; font-weight: 700;">Fila de Impressão</h1>
+            <p style="color: #94a3b8; font-size: 0.875rem;">Pedidos com arte aprovada, prontos para impressão</p>
+        </div>
+        @if (pedidos?.Count(p => p.DiasEmImpressao == 0) > 0)
+        {
+            <div class="new-orders-badge">
+                <i class="oi oi-bell"></i> @pedidos.Count(p => p.DiasEmImpressao == 0) Novos Pedidos
+            </div>
+        }
+    </div>
 
-    <table class="table-custom">
+    <table class="custom-table">
         <thead>
             <tr>
+                <th>Foto</th>
+                <th>Tempo</th>
                 <th>OS</th>
-                <th>Amostra</th>
-                <th>Produto / Observações</th>
+                <th>Produto / Cliente</th>
                 <th>Material</th>
-                <th>Medidas</th>
+                <th>Dimensões</th>
                 <th>Ações</th>
             </tr>
         </thead>
         <tbody>
+
             @if (pedidos != null)
             {
+
+
                 foreach (var p in pedidos)
                 {
-                    <tr>
-                        <td><strong>@p.OS</strong></td>
-                        <td>
+                    bool atrasado = p.DiasEmImpressao > 1; // Base 44 usa 24h para atraso
+
+                    <tr class="row-base @(atrasado ? "row-delayed" : "")">
+
+                        <td style="width: 80px; padding: 1rem;">
                             @if (!string.IsNullOrEmpty(p.Caminho_Foto))
                             {
-                                <img src="@p.Caminho_Foto" style="width: 70px; height: 70px; object-fit: cover; border-radius: 8px; border: 1px solid #ffc107;" />
+                                <img src="@p.Caminho_Foto" 
+                                     style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px; border: 1px solid #334155;" 
+                                     alt="Miniatura" />
                             }
                             else
                             {
-                                <div style="width: 70px; height: 70px; background: #222; display: flex; align-items: center; justify-content: center; border-radius: 8px;">
-                                    <span class="text-muted-light" style="font-size: 10px;">Sem foto</span>
+                                <div style="width: 50px; height: 50px; background: #1e293b; display: flex; align-items: center; justify-content: center; border-radius: 8px;">
+                                    <i class="oi oi-image" style="color: #475569;"></i>
                                 </div>
                             }
                         </td>
-                       <td>
-    <div class="obs-container">
-        <strong>@p.Produto</strong>
-        <div class="obs-tooltip">
-            <strong>📋 Geral:</strong> @(p.Observacao_Geral ?? "Sem obs") <br />
-            <hr style="border-color: #555" />
-            <strong>🛠 Técnica:</strong> @(p.Observacao_Tecnica ?? "Sem obs")
-        </div>
-    </div>
-    <br />
-    <small class="text-muted-light">Passe o mouse para ver detalhes</small>
-</td>
-                        <td>
-                            <span class="badge-material">@p.MaterialBase</span>
-                        </td>
-                        <td>
-                            <div style="font-size: 0.9rem;">
-                                <strong>@p.Largura x @p.Altura</strong><br />
-                                <span class="text-muted-light">Qtd: @p.Quantidade</span>
+
+                        <td style="padding: 1rem;">
+                            <div class="flex items-center gap-2 @(atrasado ? "text-delayed" : "")">
+                                <i class="oi oi-timer"></i>
+                                @(p.DiasEmImpressao == 0 ? "Novo" : p.DiasEmImpressao + "d")
                             </div>
+                        </td>
+                        <td style="font-weight: 700;">@p.OS</td>
+                        <td>
+                            <div class="obs-box">
+                                <span style="font-weight: 600;">@p.Produto</span>
+                                <div class="obs-content">
+                                    <strong style="color: #fedf00;">📋 Geral:</strong><br/>
+                                    <span>@(p.Observacao_Geral ?? "-")</span><br/><br/>
+                                    <strong style="color: #f87171;">🛠 Técnica:</strong><br/>
+                                    <span>@(p.Observacao_Tecnica ?? "-")</span>
+                                </div>
+                            </div><br/>
+                            <small style="color: #94a3b8;">@p.Cliente</small>
+                        </td>
+                        <td><span class="material-pill">@p.MaterialBase</span></td>
+                        <td>
+                            <span>@p.Largura x @p.Altura</span><br/>
+                            <small style="color: #94a3b8;">Qtd: @p.Quantidade</small>
                         </td>
                         <td>
                             <div class="btn-group">
-                                <a href="@p.Link_Arte" target="_blank" class="btn btn-outline-info btn-sm me-2">
-                                    <i class="oi oi-external-link"></i> Arte
-                                </a>
-                                <button class="btn btn-success btn-sm" @onclick="() => ConcluirImpressao(p.OS)">
-                                    Pronto
-                                </button>
+                                <a href="@p.LinkArte" target="_blank" class="btn btn-outline-info btn-sm">Abrir</a>
+                                <button class="btn btn-success btn-sm" @onclick="() => Concluir(p.OS)">Concluir</button>
                             </div>
                         </td>
                     </tr>
                 }
-            }
-            else
-            {
-                <tr>
-                    <td colspan="6" class="text-center">Carregando fila de produção...</td>
-                </tr>
             }
         </tbody>
     </table>
@@ -177,40 +140,19 @@
         {
             var token = await JS.InvokeAsync<string>("localStorage.getItem", "authToken");
             if (!string.IsNullOrEmpty(token))
-            {
                 Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            }
 
-            // URL Corrigida (Sem espaços e acentos como no Backend)
             pedidos = await Http.GetFromJsonAsync<List<FilaImpressaoDTO>>("api/Producao/FilaImpressao");
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine("Erro ao carregar: " + ex.Message);
-            pedidos = new List<FilaImpressaoDTO>();
-        }
+        catch (Exception ex) { Console.WriteLine(ex.Message); pedidos = new(); }
     }
 
-    private async Task ConcluirImpressao(string os)
+    private async Task Concluir(string os)
     {
-        var confirmar = await JS.InvokeAsync<bool>("confirm", $"A OS {os} está pronta para o acabamento?");
-
-        if (confirmar)
+        if (await JS.InvokeAsync<bool>("confirm", $"Confirmar conclusão da OS {os}?"))
         {
-            // Lembre-se: O endpoint "AtualizarStatus" deve estar sem espaços no Backend
-            var dados = new { PedidoId = 0, NovoStatusId = 5, UsuarioId = 1, OS = os };
-
-            var response = await Http.PutAsJsonAsync("api/Producao/AtualizarStatus", dados);
-
-            if (response.IsSuccessStatusCode)
-            {
-                await JS.InvokeVoidAsync("alert", "Sucesso! O pedido foi para o Acabamento.");
-                pedidos?.RemoveAll(x => x.OS == os);
-            }
-            else
-            {
-                await JS.InvokeVoidAsync("alert", "Erro ao atualizar status no servidor.");
-            }
+            var res = await Http.PutAsJsonAsync("api/Producao/AtualizarStatus", new { OS = os, NovoStatusId = 5 });
+            if (res.IsSuccessStatusCode) pedidos?.RemoveAll(x => x.OS == os);
         }
-    }   
+    }
 }

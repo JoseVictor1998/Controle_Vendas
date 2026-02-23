@@ -1,18 +1,43 @@
-﻿namespace ComunicacaoVisual.Client.Models
+﻿using System.Text.Json.Serialization;
+
+namespace ComunicacaoVisual.Client.Models
 {
     public class FilaImpressaoDTO
     {
+        [JsonPropertyName("os")]
         public string OS { get; set; } = "";
+
+        [JsonPropertyName("cliente")]
         public string Cliente { get; set; } = "";
+
+        [JsonPropertyName("produto")]
         public string Produto { get; set; } = "";
-        public string MaterialBase { get; set; } = "";
+
+        [JsonPropertyName("materialBase")]
+        public string? MaterialBase { get; set; }
+
+        [JsonPropertyName("diasEmImpressao")]
+        public int DiasEmImpressao { get; set; }
+
+        [JsonPropertyName("caminhoFoto")]
+        public string? Caminho_Foto { get; set; }
+
+        [JsonPropertyName("largura")]
         public decimal Largura { get; set; }
+
+        [JsonPropertyName("altura")]
         public decimal Altura { get; set; }
+
+        [JsonPropertyName("quantidade")]
         public int Quantidade { get; set; }
-        // Novos campos que você pediu:
-        public string? Observacao_Tecnica { get; set; }
+
+        [JsonPropertyName("observacaoGeral")]
         public string? Observacao_Geral { get; set; }
-        public string? Link_Arte { get; set; } // Caminho do arquivo
-        public string? Caminho_Foto { get; set; } // Amostra da imagem
+
+        [JsonPropertyName("observacaoTecnica")]
+        public string? Observacao_Tecnica { get; set; }
+
+        [JsonPropertyName("linkArte")]
+        public string? LinkArte { get; set; }
     }
 }

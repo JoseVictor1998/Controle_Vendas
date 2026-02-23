@@ -1,22 +1,45 @@
 ﻿using ComunicacaoVisual.Client.Models;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Authorization; // <--- ADICIONE ESTA LINHA
 using Microsoft.JSInterop;
 using System.Net.Http.Json;
+using System.Security.Claims; // <--- ADICIONE ESTA PARA AS ROLES
 
 namespace ComunicacaoVisual.Client.Services
 {
-    public class AuthService
+    // O segredo está aqui: adicione o ": AuthenticationStateProvider"
+    public class AuthService : AuthenticationStateProvider
     {
         private readonly HttpClient _http;
         private readonly IJSRuntime _js;
-        private readonly NavigationManager _navigationManager; // 1. Adicione esta linha
+        private readonly NavigationManager _navigationManager;
 
-        // 2. Adicione 'NavigationManager nav' aqui no construtor
         public AuthService(HttpClient http, IJSRuntime js, NavigationManager nav)
         {
             _http = http;
             _js = js;
-            _navigationManager = nav; // 3. E esta linha aqui
+            _navigationManager = nav;
+        }
+
+        // ADICIONE ESTE MÉTODO ABAIXO (O Blazor vai exigir ele)
+        public override async Task<AuthenticationState> GetAuthenticationStateAsync()
+        {
+            var token = await _js.InvokeAsync<string>("localStorage.getItem", "authToken");
+            var nivel = await _js.InvokeAsync<string>("localStorage.getItem", "userLevel");
+
+            if (string.IsNullOrEmpty(token))
+            {
+                return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+            }
+
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Name, await _js.InvokeAsync<string>("localStorage.getItem", "userName")),
+                new Claim(ClaimTypes.Role, nivel ?? "") // Aqui injetamos o "God", "Arte", etc.
+            };
+
+            var identity = new ClaimsIdentity(claims, "jwt");
+            return new AuthenticationState(new ClaimsPrincipal(identity));
         }
 
         public async Task<bool> Login(object dadosLogin)
