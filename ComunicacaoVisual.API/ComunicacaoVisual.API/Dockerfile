@@ -27,4 +27,9 @@ RUN dotnet publish "./ComunicacaoVisual.API.csproj" -c $BUILD_CONFIGURATION -o /
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+
+# garante que uploads exista e que o user tenha permissão
+RUN mkdir -p /app/wwwroot/uploads && chown -R $APP_UID:$APP_UID /app/wwwroot/uploads
+
+USER $APP_UID
 ENTRYPOINT ["dotnet", "ComunicacaoVisual.API.dll"]

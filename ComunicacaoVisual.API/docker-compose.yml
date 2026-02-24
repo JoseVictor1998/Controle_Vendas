@@ -25,15 +25,18 @@ services:
     depends_on:
       - sqlserver
     environment:
-     - ASPNETCORE_URLS=http://+:8080
-     - ASPNETCORE_ENVIRONMENT=Development
-     - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=Controle_Vendas;User Id=sa;Password=Sql#2026!erp;TrustServerCertificate=True;
-     - Jwt__Key=8jU4Cm8P653gAYuvU5p1_Segredo2026_Longa
+      - ASPNETCORE_URLS=http://+:8080
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=Controle_Vendas;User Id=sa;Password=Sql#2026!erp;TrustServerCertificate=True;
+      - Jwt__Key=8jU4Cm8P653gAYuvU5p1_Segredo2026_Longa
+    volumes:
+      - uploads_data:/app/wwwroot/uploads
     networks:
       - erp-network
 
 volumes:
   sqlserver_data:
+  uploads_data:
 
 networks:
   erp-network:

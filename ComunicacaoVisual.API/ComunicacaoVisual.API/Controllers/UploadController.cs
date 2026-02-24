@@ -1,4 +1,5 @@
 ﻿using Azure.Core;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
@@ -12,6 +13,7 @@ public class UploadController : ControllerBase
         _env = env;
     }
 
+    [Authorize(Roles = "God,Admin,Vendedor")]
     [HttpPost("Imagem")]
     public async Task<IActionResult> UploadImagem(IFormFile file)
     {

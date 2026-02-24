@@ -358,6 +358,30 @@ namespace ComunicacaoVisual.API.Controllers
         }
 
         [Authorize(Roles = "God,Admin,Vendedor")]
+        [HttpGet("ClientesListar")]
+        public async Task<IActionResult> ClientesListar()
+        {
+            var lista = await _context.Clientes
+                .Select(c => new { id = c.ClienteId, nome = c.Nome })
+                .OrderBy(x => x.nome)
+                .ToListAsync();
+
+            return Ok(lista);
+        }
+
+        [Authorize(Roles = "God,Admin,Vendedor")]
+        [HttpGet("TiposProdutoListar")]
+        public async Task<IActionResult> TiposProdutoListar()
+        {
+            var lista = await _context.TipoProdutos
+                .Select(t => new { id = t.TipoProdutoId, nome = t.Nome })
+                .OrderBy(x => x.nome)
+                .ToListAsync();
+
+            return Ok(lista);
+        }
+
+        [Authorize(Roles = "God,Admin,Vendedor")]
         [HttpPost("CriarPedido")]
         public async Task<IActionResult> CriarPedidoComItem([FromBody] CriarPedidoComItemInput model)
         {
