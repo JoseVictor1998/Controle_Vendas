@@ -1,10 +1,11 @@
 ﻿@page "/novo-pedido"
 
-@using System.Net.Http.Json
-@using System.Text.Json
-@using ComunicacaoVisual.Client.Models
 @using System.Linq
 @using System.Net.Http.Headers
+@using System.Net.Http.Json
+@using System.Text.Json
+@using Microsoft.AspNetCore.Components.Forms
+@using ComunicacaoVisual.Client.Models
 
 @inject HttpClient Http
 @inject ComunicacaoVisual.Client.Services.PedidoService PedidoService
@@ -15,7 +16,7 @@
     .page { background:#0f172a; min-height:100vh; padding:2rem; color:#f8fafc; }
     .container { max-width: 880px; margin: 0 auto; }
     .card { background:#1e293b; border:1px solid #334155; border-radius:14px; padding:1.25rem; }
-    .muted { color:#e2e8f0; } /* mais claro */
+    .muted { color:#e2e8f0; }
     .label { color:#cbd5e1; font-size:.75rem; text-transform:uppercase; letter-spacing:.06em; margin-bottom:.25rem; display:block; }
     .input, .textarea { width:100%; background:#0f172a; border:1px solid #475569; border-radius:10px; padding:.6rem .75rem; color:#fff; }
     .textarea { min-height: 92px; resize: vertical; }
@@ -34,6 +35,8 @@
     .ok { background: rgba(34,197,94,.12); border:1px solid rgba(34,197,94,.35); color:#bbf7d0; }
     .err { background: rgba(239,68,68,.12); border:1px solid rgba(239,68,68,.35); color:#fecaca; }
     .hint { color:#94a3b8; font-size:.8rem; margin-top:.35rem; }
+
+    .file-hidden { display:none !important; }
 </style>
 
 <div class="page">
@@ -51,7 +54,9 @@
         }
         else if (step == 2)
         {
-            <h2 style="font-size: 1.2rem; font-weight: 800; margin: 1rem 0; color:#fff;">Confirmação do Pedido</h2>
+            <h2 style="font-size: 1.2rem; font-weight: 800; margin: 1rem 0; color:#fff;">
+                Confirmação do Pedido
+            </h2>
 
             <div class="card">
                 <div class="grid2" style="margin-bottom: 1rem;">
@@ -108,6 +113,7 @@
                         <div style="color:#fff; font-size:.75rem;">Foto (URL)</div>
                         <div class="row">
                             <span class="pill">@model.CaminhoFoto</span>
+
                             @if (!string.IsNullOrWhiteSpace(previewUrl))
                             {
                                 <img class="preview" src="@previewUrl" alt="Prévia" />
@@ -140,10 +146,10 @@
                         <label class="label">Cliente</label>
 
                         <input class="input"
-                           list="clientesList"
-                           placeholder="Digite o nome do cliente..."
-                           @bind="clienteNome"
-                           @bind:event="oninput" />
+                               list="clientesList"
+                               placeholder="Digite o nome do cliente..."
+                               @bind="clienteNome"
+                               @bind:event="oninput" />
 
                         <datalist id="clientesList">
                             @foreach (var c in clientes)
@@ -165,10 +171,10 @@
                     <label class="label">Produto</label>
 
                     <input class="input"
-                        list="produtosList"
-                        placeholder="Digite o nome do produto..."
-                        @bind="produtoNome"
-                        @bind:event="oninput" />
+                           list="produtosList"
+                           placeholder="Digite o nome do produto..."
+                           @bind="produtoNome"
+                           @bind:event="oninput" />
 
                     <datalist id="produtosList">
                         @foreach (var p in produtos)
@@ -185,10 +191,12 @@
                         <label class="label">Largura</label>
                         <input class="input" type="number" step="0.01" @bind="model.Largura" />
                     </div>
+
                     <div>
                         <label class="label">Altura</label>
                         <input class="input" type="number" step="0.01" @bind="model.Altura" />
                     </div>
+
                     <div>
                         <label class="label">Quantidade</label>
                         <input class="input" type="number" min="1" @bind="model.Quantidade" />
@@ -205,25 +213,31 @@
                     <textarea class="textarea" @bind="model.ObservacaoTecnica"></textarea>
                 </div>
 
-                @using Microsoft.AspNetCore.Components.Forms
-
                 <div style="margin-top: 1rem;">
-                <label class="label">Foto do Produto</label>
+                    <label class="label">Foto do Produto</label>
 
-                 <div class="row">
-                 <InputFile OnChange="OnFileSelected" accept="image/*" />
+                    <div class="row">
+                        <label class="btn btn-outline" style="display:inline-flex; align-items:center; gap:.5rem;">
+                            Selecionar imagem
+                            <InputFile OnChange="OnFileSelected" accept="image/*" class="file-hidden" />
+                        </label>
 
-                 @if (!string.IsNullOrWhiteSpace(previewUrl))
-                {
-                 <img class="preview" src="@previewUrl" />
-                 }
-                 </div>
+                        @if (!string.IsNullOrWhiteSpace(fileName))
+                        {
+                            <span class="hint" style="color:#fff;">@fileName</span>
+                        }
 
-                 @if (!string.IsNullOrWhiteSpace(model.CaminhoFoto))
-                 {
-                  <div class="hint">Salvo em: @model.CaminhoFoto</div>
-                 }
-                 </div>
+                        @if (!string.IsNullOrWhiteSpace(previewUrl))
+                        {
+                            <img class="preview" src="@previewUrl" alt="Prévia" />
+                        }
+                    </div>
+
+                    @if (!string.IsNullOrWhiteSpace(model.CaminhoFoto))
+                    {
+                        <div class="hint" style="color:#fff;">Salvo em: @model.CaminhoFoto</div>
+                    }
+                </div>
 
                 <button class="btn btn-yellow" style="width:100%; margin-top:1rem;"
                         @onclick="Revisar" disabled="@(!CanProceed)">
@@ -240,7 +254,6 @@
 </div>
 
 @code {
-    // ====== Models simples para autocomplete ======
     private class ClienteOption
     {
         public int Id { get; set; }
@@ -253,18 +266,21 @@
         public string Nome { get; set; } = "";
     }
 
+    private class UploadResult
+    {
+        public string Url { get; set; } = "";
+    }
+
     private int step = 1;
     private bool carregandoListas = true;
     private bool salvando;
     private bool ok;
     private string? msg;
 
-    // nomes que o usuário vê
     private string clienteNome = "";
     private string produtoNome = "";
     private string vendedorNome = "";
 
-    // ids que a API precisa
     private List<ClienteOption> clientes = new();
     private List<ProdutoOption> produtos = new();
 
@@ -274,41 +290,35 @@
     };
 
     private string? previewUrl;
+    private string? fileName;
 
     protected override async Task OnInitializedAsync()
-{
-    try
     {
-        // coloca token no header (evita 401)
-        var token = await JS.InvokeAsync<string>("localStorage.getItem", "authToken");
-        if (!string.IsNullOrWhiteSpace(token))
-            Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        try
+        {
+            var token = await JS.InvokeAsync<string>("localStorage.getItem", "authToken");
+            if (!string.IsNullOrWhiteSpace(token))
+                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-        // vendedor vem do login
-        vendedorNome = await JS.InvokeAsync<string>("localStorage.getItem", "userName") ?? "";
-        model.VendedorID = await GetUsuarioIdFromJwtAsync();
+            vendedorNome = await JS.InvokeAsync<string>("localStorage.getItem", "userName") ?? "";
+            model.VendedorID = await GetUsuarioIdFromJwtAsync();
 
-        // carrega listas
-        clientes = await Http.GetFromJsonAsync<List<ClienteOption>>("api/Cliente/Listar") ?? new();
-        produtos = await Http.GetFromJsonAsync<List<ProdutoOption>>("api/TipoProduto/Listar") ?? new();
+            clientes = await Http.GetFromJsonAsync<List<ClienteOption>>("api/Cliente/Listar") ?? new();
+            produtos = await Http.GetFromJsonAsync<List<ProdutoOption>>("api/TipoProduto/Listar") ?? new();
+        }
+        catch (Exception ex)
+        {
+            msg = $"Erro ao carregar listas: {ex.Message}";
+            ok = false;
+        }
+        finally
+        {
+            carregandoListas = false;
+        }
     }
-    catch (Exception ex)
-{
-    msg = $"Erro ao carregar listas: {ex.Message}";
-    ok = false;
-    
-}
-    finally
-    {
-        carregandoListas = false;
-    }
-}
 
     private bool CanProceed =>
-        model.ClienteId > 0 &&
-        !string.IsNullOrWhiteSpace(clienteNome) &&
-        model.TipoProdutoId > 0 &&
-        !string.IsNullOrWhiteSpace(produtoNome) &&
+        ResolveIdsFromNames() &&
         !string.IsNullOrWhiteSpace(model.OsExterna) &&
         model.OsExterna.Length <= 6 &&
         model.Largura > 0 &&
@@ -316,75 +326,71 @@
         model.Quantidade > 0 &&
         model.VendedorID > 0;
 
-    private void OnClienteChanged(ChangeEventArgs e)
+    private bool ResolveIdsFromNames()
     {
-        clienteNome = e.Value?.ToString() ?? "";
         var c = clientes.FirstOrDefault(x => string.Equals(x.Nome, clienteNome, StringComparison.OrdinalIgnoreCase));
         model.ClienteId = c?.Id ?? 0;
-    }
 
-    private void OnProdutoChanged(ChangeEventArgs e)
-    {
-        produtoNome = e.Value?.ToString() ?? "";
         var p = produtos.FirstOrDefault(x => string.Equals(x.Nome, produtoNome, StringComparison.OrdinalIgnoreCase));
         model.TipoProdutoId = p?.Id ?? 0;
-    }
 
-    private class UploadResult
-{
-    public string Url { get; set; } = "";
-}
+        return model.ClienteId > 0 && model.TipoProdutoId > 0;
+    }
 
     private async Task OnFileSelected(InputFileChangeEventArgs e)
-{
-    try
     {
-        var file = e.File;
-        if (file is null) return;
+        try
+        {
+            var file = e.File;
+            if (file is null) return;
 
-        // 1) Preview no navegador (base64)
-        using var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024); // 10MB
-        using var ms = new MemoryStream();
-        await stream.CopyToAsync(ms);
+            fileName = file.Name;
 
-        previewUrl = $"data:{file.ContentType};base64,{Convert.ToBase64String(ms.ToArray())}";
+            // Preview
+            using var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
 
-        // 2) Upload para API
-        var content = new MultipartFormDataContent();
+            previewUrl = $"data:{file.ContentType};base64,{Convert.ToBase64String(ms.ToArray())}";
 
-        var fileContent = new ByteArrayContent(ms.ToArray());
-        fileContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType);
+            // Upload
+            var content = new MultipartFormDataContent();
 
-        content.Add(fileContent, "file", file.Name);
+            var fileContent = new ByteArrayContent(ms.ToArray());
+            fileContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType);
 
-        var resp = await Http.PostAsync("api/Upload/Imagem", content);
+            content.Add(fileContent, "file", file.Name);
 
-        if (resp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            var resp = await Http.PostAsync("api/Upload/Imagem", content);
+
+            if (resp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                ok = false;
+                msg = "Sessão expirada. Faça login novamente.";
+                return;
+            }
+
+            resp.EnsureSuccessStatusCode();
+
+            var result = await resp.Content.ReadFromJsonAsync<UploadResult>();
+            if (result is not null && !string.IsNullOrWhiteSpace(result.Url))
+            {
+                model.CaminhoFoto = result.Url;
+                ok = true;
+                msg = "Imagem enviada com sucesso!";
+            }
+            else
+            {
+                ok = false;
+                msg = "Upload realizado, mas a API não retornou a URL da imagem.";
+            }
+        }
+        catch (Exception ex)
         {
             ok = false;
-            msg = "Sessão expirada. Faça login novamente.";
-            return;
-        }
-
-        resp.EnsureSuccessStatusCode();
-
-        var result = await resp.Content.ReadFromJsonAsync<UploadResult>();
-        if (result is not null && !string.IsNullOrWhiteSpace(result.Url))
-        {
-            model.CaminhoFoto = result.Url; // ✅ aqui vira URL acessível para todos
-        }
-        else
-        {
-            ok = false;
-            msg = "Upload realizado, mas a API não retornou a URL da imagem.";
+            msg = $"Erro ao enviar imagem: {ex.Message}";
         }
     }
-    catch (Exception ex)
-    {
-        ok = false;
-        msg = $"Erro ao enviar imagem: {ex.Message}";
-    }
-}
 
     private void Revisar()
     {
@@ -405,6 +411,8 @@
         salvando = true;
         msg = null;
 
+        ResolveIdsFromNames();
+
         var (success, message) = await PedidoService.CriarPedidoAsync(model);
 
         ok = success;
@@ -413,11 +421,11 @@
 
         if (ok)
         {
-            // limpa tudo
             model = new() { Quantidade = 1, VendedorID = model.VendedorID };
             clienteNome = "";
             produtoNome = "";
             previewUrl = null;
+            fileName = null;
             step = 1;
         }
     }
