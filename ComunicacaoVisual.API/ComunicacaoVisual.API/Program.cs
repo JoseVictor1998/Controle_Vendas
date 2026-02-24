@@ -94,7 +94,7 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
-
+app.UseStaticFiles();
 // 5. Pipeline de Execução (Middleware) - A ORDEM IMPORTA!
 if (app.Environment.IsDevelopment())
 {

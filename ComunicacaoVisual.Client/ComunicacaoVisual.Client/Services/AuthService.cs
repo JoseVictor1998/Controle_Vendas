@@ -21,25 +21,65 @@ namespace ComunicacaoVisual.Client.Services
             _navigationManager = nav;
         }
 
-        // ADICIONE ESTE MÉTODO ABAIXO (O Blazor vai exigir ele)
+        
         public override async Task<AuthenticationState> GetAuthenticationStateAsync()
         {
             var token = await _js.InvokeAsync<string>("localStorage.getItem", "authToken");
             var nivel = await _js.InvokeAsync<string>("localStorage.getItem", "userLevel");
 
-            if (string.IsNullOrEmpty(token))
+            if (string.IsNullOrEmpty(token) || TokenExpirou(token))
             {
-                return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+                await _js.InvokeVoidAsync("localStorage.removeItem", "authToken");
+
+                _navigationManager.NavigateTo("/login", true);
+
+                return new AuthenticationState(
+                    new ClaimsPrincipal(new ClaimsIdentity())
+                );
             }
 
             var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.Name, await _js.InvokeAsync<string>("localStorage.getItem", "userName")),
-                new Claim(ClaimTypes.Role, nivel ?? "") // Aqui injetamos o "God", "Arte", etc.
-            };
+    {
+        new Claim(ClaimTypes.Name,
+            await _js.InvokeAsync<string>("localStorage.getItem", "userName")),
+        new Claim(ClaimTypes.Role, nivel ?? "")
+    };
 
             var identity = new ClaimsIdentity(claims, "jwt");
             return new AuthenticationState(new ClaimsPrincipal(identity));
+        }
+
+        private static bool TokenExpirou(string token)
+        {
+            try
+            {
+                var parts = token.Split('.');
+                if (parts.Length != 3)
+                    return true;
+
+                var payload = parts[1];
+                payload = payload.Replace('-', '+').Replace('_', '/');
+
+                switch (payload.Length % 4)
+                {
+                    case 2: payload += "=="; break;
+                    case 3: payload += "="; break;
+                }
+
+                var jsonBytes = Convert.FromBase64String(payload);
+                using var doc = System.Text.Json.JsonDocument.Parse(jsonBytes);
+
+                if (!doc.RootElement.TryGetProperty("exp", out var exp))
+                    return true;
+
+                var expDate = DateTimeOffset.FromUnixTimeSeconds(exp.GetInt64()).UtcDateTime;
+
+                return DateTime.UtcNow >= expDate;
+            }
+            catch
+            {
+                return true;
+            }
         }
 
         public async Task<bool> Login(object dadosLogin)
