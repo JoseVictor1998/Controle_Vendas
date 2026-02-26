@@ -513,38 +513,43 @@ SELECT
 	 GO
 -- View de Alerta de Atrasos para a Gestão
 CREATE OR ALTER VIEW VW_Alertas_SLA AS
-SELECT 
+WITH UltimoStatus AS (
+    SELECT
+        H.Pedido_ID,
+        H.Status_ID,
+        H.Data_Mudanca,
+        ROW_NUMBER() OVER (PARTITION BY H.Pedido_ID ORDER BY H.Historico_ID DESC) AS rn
+    FROM Historico_Status H
+),
+DataAprovacao AS (
+    SELECT
+        Pedido_ID,
+        MAX(Data_Mudanca) AS Data_Aprovacao
+    FROM Historico_Status
+    WHERE Status_ID = 4
+    GROUP BY Pedido_ID
+)
+SELECT
     P.OS_Externa,
     C.Nome AS Cliente,
     SP.Nome AS Status_Atual,
-    DATEDIFF(HOUR, H.Data_Mudanca, GETDATE()) AS Horas_No_Status,
-    CASE 
-        WHEN SP.Status_ID IN (1,2,3) AND DATEDIFF(HOUR, H.Data_Mudanca, GETDATE()) > 24 THEN 'ATRASADO NA ARTE'
-        WHEN SP.Status_ID IN (4,5) AND DATEDIFF(HOUR, H.Data_Mudanca, GETDATE()) > 48 THEN 'ATRASADO NA PRODUÇÃO'
+    DATEDIFF(HOUR, U.Data_Mudanca, GETDATE()) AS Horas_No_Status,
+    DATEDIFF(HOUR, DA.Data_Aprovacao, GETDATE()) AS Horas_Desde_Aprovacao,
+
+    CASE
+        WHEN P.Status_ID IN (2,3) AND DATEDIFF(HOUR, U.Data_Mudanca, GETDATE()) > 24
+            THEN 'ATRASADO NA ARTE (24h)'
+        WHEN P.Status_ID = 4 AND DATEDIFF(HOUR, U.Data_Mudanca, GETDATE()) > 24
+            THEN 'ATRASADO NA IMPRESSÃO (24h)'
+        WHEN P.Status_ID IN (4,5) AND DA.Data_Aprovacao IS NOT NULL AND DATEDIFF(HOUR, DA.Data_Aprovacao, GETDATE()) > 168
+            THEN 'ATRASADO NA PRODUÇÃO (7 dias após aprovação)'
         ELSE 'No Prazo'
     END AS Alerta_Prazo
 FROM Pedido P
 JOIN Clientes C ON P.Cliente_ID = C.Cliente_id
 JOIN Status_Producao SP ON P.Status_ID = SP.Status_ID
-JOIN Historico_Status H ON P.Pedido_ID = H.Pedido_ID
-WHERE H.Historico_ID = (SELECT MAX(Historico_ID) FROM Historico_Status WHERE Pedido_ID = P.Pedido_ID);
-GO
-CREATE OR ALTER PROCEDURE SP_Validar_Login
-    @Login NVARCHAR(50),
-    @Senha NVARCHAR(255)
-AS
-BEGIN
-    SET NOCOUNT ON;
-    SELECT 
-        Usuario_ID AS UsuarioId,      -- Alias para bater com a classe C#
-        Nome, 
-        Funcao,
-        Login,
-        Senha,
-        Nivel_Acesso AS NivelAcesso   -- AQUI ESTÁ O SEGREDO!
-    FROM Usuario 
-    WHERE Login = @Login AND Senha = @Senha;
-END
+JOIN UltimoStatus U ON P.Pedido_ID = U.Pedido_ID AND U.rn = 1
+LEFT JOIN DataAprovacao DA ON P.Pedido_ID = DA.Pedido_ID;
 GO
 
 CREATE OR ALTER PROCEDURE SP_Cadastrar_Cliente_Completo
@@ -611,6 +616,32 @@ BEGIN
 END
 GO
 
+CREATE OR ALTER PROCEDURE SP_Atualizar_Status_Arte
+    @Item_ID INT,
+    @Novo_Status_Arte_ID INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- valida: só permite 3,4,5 (correção/aprovada/reprovada)
+    IF @Novo_Status_Arte_ID NOT IN (3,4,5)
+    BEGIN
+        RAISERROR('Status_Arte inválido. Use 3 (Em Correção), 4 (Aprovada), 5 (Reprovada).', 16, 1);
+        RETURN;
+    END
+
+    IF NOT EXISTS (SELECT 1 FROM Arquivo_Arte WHERE Item_ID = @Item_ID)
+    BEGIN
+        RAISERROR('Não existe arquivo de arte vinculado para este Item.', 16, 1);
+        RETURN;
+    END
+
+    UPDATE Arquivo_Arte
+    SET Status_Arte_ID = @Novo_Status_Arte_ID
+    WHERE Item_ID = @Item_ID;
+END
+GO
+
 CREATE OR ALTER PROCEDURE SP_Criar_Pedido_Com_Item
     @Cliente_ID INT,
     @OS_Externa NVARCHAR(6),
@@ -654,21 +685,17 @@ AS
 BEGIN
     SET NOCOUNT ON;
     BEGIN TRANSACTION;
-    BEGIN TRY
-        -- A TRAVA: Se tentar mudar para "Entregue" (7) sem dinheiro, o banco barra!
-        IF @Novo_Status_ID = 7 AND (@Valor_Total IS NULL OR @Valor_Total <= 0 OR @Forma_Pagamento IS NULL)
-        BEGIN
-            RAISERROR ('Erro Financeiro: Informe o Valor Total e a Forma de Pagamento para entregar o pedido.', 16, 1);
-            ROLLBACK TRANSACTION;
-            RETURN;
-        END
+   
+BEGIN TRY
+    DECLARE @bin VARBINARY(128) = CAST(@Usuario_ID AS VARBINARY(128));
+    SET CONTEXT_INFO @bin;
 
-        -- Atualiza o status e também os valores financeiros (se enviados)
-        UPDATE Pedido
-        SET Status_ID = @Novo_Status_ID,
-            Valor_Total = ISNULL(@Valor_Total, Valor_Total),
-            Forma_Pagamento = ISNULL(@Forma_Pagamento, Forma_Pagamento)
-        WHERE Pedido_ID = @Pedido_ID;
+    UPDATE Pedido
+    SET Status_ID = @Novo_Status_ID,
+        Valor_Total = ISNULL(@Valor_Total, Valor_Total),
+        Forma_Pagamento = ISNULL(@Forma_Pagamento, Forma_Pagamento)
+    WHERE Pedido_ID = @Pedido_ID;
+
    
         COMMIT TRANSACTION;
         PRINT 'Status e Financeiro atualizados com sucesso!';
@@ -824,28 +851,38 @@ BEGIN
 END
 
 GO
-CREATE OR ALTER TRIGGER TR_ArteReprovada_ArquivaPedido
+CREATE OR ALTER TRIGGER TR_StatusArte_RefleteNoPedido
 ON Arquivo_Arte
-AFTER UPDATE, INSERT
+AFTER INSERT, UPDATE
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    -- ID 5 = Reprovada (conforme seu INSERT na Status_Arte)
-    -- ID 8 = Arquivado (conforme seu INSERT na Status_Producao)
-    
-    IF EXISTS (SELECT 1 FROM inserted WHERE Status_Arte_ID = 5)
-    BEGIN
-        UPDATE P
-        SET P.Status_ID = 8
-        FROM Pedido P
-        INNER JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID
-        INNER JOIN inserted i ON PI.Item_ID = i.Item_ID
-        WHERE i.Status_Arte_ID = 5;
-        
-        PRINT 'Automação: Pedido arquivado porque a arte foi marcada como Reprovada.';
-    END
+    -- Em Correção (3) -> volta pedido para Aguardando Arte (2)
+    UPDATE P
+    SET P.Status_ID = 2
+    FROM Pedido P
+    JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID
+    JOIN inserted i ON PI.Item_ID = i.Item_ID
+    WHERE i.Status_Arte_ID = 3;
+
+    -- Aprovada (4) -> pedido vai para Arte Aprovada (4) (entra na impressão)
+    UPDATE P
+    SET P.Status_ID = 4
+    FROM Pedido P
+    JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID
+    JOIN inserted i ON PI.Item_ID = i.Item_ID
+    WHERE i.Status_Arte_ID = 4;
+
+    -- Reprovada (5) -> pedido arquivado (8)
+    UPDATE P
+    SET P.Status_ID = 8
+    FROM Pedido P
+    JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID
+    JOIN inserted i ON PI.Item_ID = i.Item_ID
+    WHERE i.Status_Arte_ID = 5;
 END
+GO
 
 
 

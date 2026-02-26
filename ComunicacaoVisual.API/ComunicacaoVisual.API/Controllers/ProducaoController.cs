@@ -17,23 +17,7 @@ namespace ComunicacaoVisual.API.Controllers
             _context = context;
         }
 
-        [Authorize(Roles = "God,Admin,Producao,Vendedor")]
-        [HttpGet("FilaCompleta")]
-        public async Task<IActionResult> GetFilaCompleta()
-        {
-            try
-            {
-                var dados = await _context.VwFilaProducaoCompleta.ToListAsync();
-                return Ok(dados);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { mensagem = "Erro ao acessar a View", erro = ex.Message });
-            }
-        }
-
-
-
+        [Authorize(Roles = "God,Admin,Vendedor")]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetPedidoPorId(int id)
         {
@@ -87,10 +71,10 @@ namespace ComunicacaoVisual.API.Controllers
         {
             try
             {
-                // Começamos pegando a View completa do Contexto
+              
                 var consulta = _context.VwBuscaRapidaPedidos.AsQueryable();
 
-                // Se o usuário digitou algo no campo de busca, aplicamos o filtro
+              
                 if (!string.IsNullOrEmpty(filtro))
                 {
                     consulta = consulta.Where(p =>
@@ -141,33 +125,7 @@ namespace ComunicacaoVisual.API.Controllers
 
         }
 
-        [Authorize(Roles = "God,Admin,Vendedor")]
-        [HttpGet("BuscaPedido")]
-        public async Task<IActionResult> GetBuscaRapidaPedido([FromQuery] string? filtro)
-        {
-            try
-            {
-                var consulta  =  _context.VwBuscaRapidaPedidos.AsQueryable();
-               
-                if (!string.IsNullOrEmpty(filtro))
-                {
-                    consulta = consulta.Where(p =>
-                        p.Nome.Contains(filtro) ||
-                        p.Os.Contains(filtro) ||
-                        p.Produto.Contains(filtro));
-                }
-                var resultado = await consulta.ToListAsync();
-                return Ok(resultado);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new
-                {
-                    mensagem = "Erro Buscar Pedido",
-                    erro = ex.Message
-                });
-            }
-        }
+       
 
         [Authorize(Roles = "God,Admin")]
         [HttpGet("DashboardFinanceiro")]
@@ -176,7 +134,7 @@ namespace ComunicacaoVisual.API.Controllers
             try
             {
                 var dados = await _context.VwDashboardFinanceiros.ToListAsync();
-                return Ok(dados); // 👈 ESTAVA FALTANDO ISSO
+                return Ok(dados); 
             }
             catch (Exception ex)
             {
@@ -259,23 +217,21 @@ namespace ComunicacaoVisual.API.Controllers
         {
             try
             {
-                // 1. Pegamos as informações de quem está fazendo a requisição pelo Token JWT
+                
                 var roleUsuarioLogado = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
                 var idUsuarioLogado = User.FindFirst("UsuarioId")?.Value;
 
-                // 2. REGRA DE OURO: Se for um Vendedor, ele SÓ pode ver o próprio ID.
-                // Se ele tentar passar o ID de outro colega na URL, a API barra.
-                // God e Admin passam por aqui direto e podem ver qualquer ID.
+                
                 if (roleUsuarioLogado == "Vendedor" && idUsuarioLogado != vendedorId.ToString())
                 {
                     return Forbid("Você não tem permissão para visualizar pedidos de outros vendedores.");
                 }
 
-                // 3. Filtro obrigatório pelo ID solicitado (que agora sabemos que é seguro)
+                
                 var consulta = _context.VwMeusPedidosVendedors
                                        .Where(p => p.VendedorId == vendedorId);
 
-                // 4. Filtro de busca opcional
+                
                 if (!string.IsNullOrEmpty(filtro))
                 {
                     consulta = consulta.Where(p =>
@@ -381,6 +337,31 @@ namespace ComunicacaoVisual.API.Controllers
             return Ok(lista);
         }
 
+        [Authorize(Roles = "God,Admin,Producao,Impressao,Arte,Vendedor")]
+        [HttpGet("StatusListar")]
+        public IActionResult StatusListar()
+        {
+            try
+            {
+                var lista = _context.Database
+                    .SqlQuery<StatusOption>($@"
+                SELECT 
+                    Status_ID AS Id,
+                    Nome
+                FROM Status_Producao
+                WHERE Ativo = 1
+                ORDER BY Ordem
+            ")
+                    .ToList();
+
+                return Ok(lista);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { mensagem = "Erro ao listar status", erro = ex.Message });
+            }
+        }
+
         [Authorize(Roles = "God,Admin,Vendedor")]
         [HttpPost("CriarPedido")]
         public async Task<IActionResult> CriarPedidoComItem([FromBody] CriarPedidoComItemInput model)
@@ -408,7 +389,7 @@ namespace ComunicacaoVisual.API.Controllers
 
         }
 
-        [Authorize(Roles = "God")] // A trava de segurança para o seu nível geral
+        [Authorize(Roles = "God")] 
         [HttpPost("CadastrarUsuario")]
        public async Task<IActionResult> CadastrarUsuario([FromBody] CadastrarUsuarioInput model)
         {
@@ -458,40 +439,33 @@ namespace ComunicacaoVisual.API.Controllers
         }
 
         [Authorize(Roles = "God,Admin,Vendedor")]
-        [HttpPost("CadastrarPedido")]
-        public async Task<IActionResult> CadastrarPedido([FromBody] PedidoInputModel model)
+        [HttpPut("AtualizarStatusArte")]
+        public async Task<IActionResult> AtualizarStatusArte([FromBody] AtualizarStatusArteInput model)
         {
             try
             {
-                // Aqui o C# executa a sua procedure SP_Criar_Pedido_Com_Item
                 await _context.Database.ExecuteSqlInterpolatedAsync($@"
-                    EXEC SP_Criar_Pedido_Com_Item 
-                        @Cliente_ID = {model.ClienteId}, 
-                        @OS_Externa = {model.OsExterna}, 
-                        @Vendedor_ID = {model.VendedorId}, 
-                        @Observacao_Geral = {model.ObservacaoGeral}, 
-                        @Tipo_Produto_ID = {model.TipoProdutoId}, 
-                        @Largura = {model.Largura}, 
-                        @Altura = {model.Altura}, 
-                        @Quantidade = {model.Quantidade}, 
-                        @Observacao_Tecnica = {model.ObservacaoTecnica}, 
-                        @Caminho_Foto = {model.CaminhoFoto}");
+            EXEC SP_Atualizar_Status_Arte
+                @Item_ID = {model.ItemId},
+                @Novo_Status_Arte_ID = {model.NovoStatusArteId}");
 
-                return Ok(new { mensagem = "Pedido enviado para a produção com sucesso!" });
+                return Ok(new { mensagem = "Status da arte atualizado com sucesso!" });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { erro = "Erro ao salvar pedido", detalhe = ex.Message });
+                return StatusCode(500, new { erro = "Erro ao atualizar status da arte", detalhe = ex.Message });
             }
         }
 
-        [Authorize(Roles = "God,Admin,Producao,Impressor,Arte")]
+
+
+        [Authorize(Roles = "God,Admin,Producao,Impressao,Arte")]
         [HttpPut("AtualizarStatus")]
         public async Task<IActionResult> AtualizarStatus([FromBody] AtualizarStatusInput model)
         {
             try
             {
-                // Executa a sua procedure SP_Atualizar_Status_Pedido
+                
                 await _context.Database.ExecuteSqlInterpolatedAsync($@"
             EXEC SP_Atualizar_Status_Pedido 
                 @Pedido_ID = {model.PedidoId}, 
@@ -554,27 +528,6 @@ namespace ComunicacaoVisual.API.Controllers
 
         }
 
-
-        [HttpDelete("Ocultar/{id}")]
-        public async Task<IActionResult> OcultarPedido(int id, int usuarioId)
-        {
-            try
-            {
-                // Mudamos para o ID 99 (ou o ID que você criar para 'Oculto')
-                // Isso faz o pedido sair das Views de produção sem apagar os dados
-                await _context.Database.ExecuteSqlInterpolatedAsync($@"
-            EXEC SP_Atualizar_Status_Pedido 
-                @Pedido_ID = {id}, 
-                @Novo_Status_ID = 8, 
-                @Usuario_ID = {usuarioId}");
-
-                return Ok(new { mensagem = "Pedido movido para o arquivo e ocultado da fila." });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { erro = "Erro ao ocultar", detalhe = ex.Message });
-            }
-        }
 
     }
 }

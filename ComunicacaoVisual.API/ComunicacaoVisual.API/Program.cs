@@ -1,6 +1,7 @@
 ﻿using System.Text;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
@@ -40,8 +41,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = false,
             ValidateLifetime = true,
             ClockSkew = TimeSpan.Zero,
-
-            // Mapeamento essencial para Roles (Nível de Acesso)
             NameClaimType = System.Security.Claims.ClaimTypes.Name,
             RoleClaimType = System.Security.Claims.ClaimTypes.Role
         };
@@ -65,10 +64,9 @@ builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "ComunicacaoVisual API", Version = "v1" });
 
-    // 1. Define o esquema de segurança (Cria o botão Authorize no topo)
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "JWT Authorization header usando o esquema Bearer. Exemplo: \"12345abcdef\"",
+        Description = "JWT Authorization header usando o esquema Bearer. Exemplo: \"Bearer {token}\"",
         Name = "Authorization",
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.Http,
@@ -76,7 +74,6 @@ builder.Services.AddSwaggerGen(c =>
         BearerFormat = "JWT"
     });
 
-    // 2. Aplica a exigência de segurança globalmente no Swagger
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
@@ -94,8 +91,22 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
+
+// ✅ Servir arquivos estáticos (wwwroot)
 app.UseStaticFiles();
-// 5. Pipeline de Execução (Middleware) - A ORDEM IMPORTA!
+
+// ✅ SERVIR /uploads EXPLICITAMENTE (garante que vai funcionar por IP também)
+var uploadsPath = Path.Combine(app.Environment.WebRootPath, "uploads");
+Directory.CreateDirectory(uploadsPath);
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(uploadsPath),
+    RequestPath = "/uploads",
+    ServeUnknownFileTypes = true
+});
+
+// 5. Pipeline - a ORDEM IMPORTA!
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -104,7 +115,6 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("PermitirTudo");
 
-// A ordem correta para Autenticação/Autorização
 app.UseAuthentication();
 app.UseAuthorization();
 
