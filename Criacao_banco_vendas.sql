@@ -618,27 +618,39 @@ GO
 
 CREATE OR ALTER PROCEDURE SP_Atualizar_Status_Arte
     @Item_ID INT,
-    @Novo_Status_Arte_ID INT
+    @Novo_Status_Arte_ID INT,
+    @Usuario_ID INT
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    -- valida: só permite 3,4,5 (correção/aprovada/reprovada)
-    IF @Novo_Status_Arte_ID NOT IN (3,4,5)
-    BEGIN
-        RAISERROR('Status_Arte inválido. Use 3 (Em Correção), 4 (Aprovada), 5 (Reprovada).', 16, 1);
-        RETURN;
-    END
+    -- garante que o trigger do histórico pegue o usuário certo
+    EXEC sp_set_session_context @key = N'UsuarioId', @value = @Usuario_ID;
 
-    IF NOT EXISTS (SELECT 1 FROM Arquivo_Arte WHERE Item_ID = @Item_ID)
-    BEGIN
-        RAISERROR('Não existe arquivo de arte vinculado para este Item.', 16, 1);
-        RETURN;
-    END
-
+    -- atualiza o status da arte
     UPDATE Arquivo_Arte
     SET Status_Arte_ID = @Novo_Status_Arte_ID
     WHERE Item_ID = @Item_ID;
+
+    -- pega o pedido
+    DECLARE @PedidoId INT;
+    SELECT @PedidoId = Pedido_ID FROM Pedido_Item WHERE Item_ID = @Item_ID;
+
+    -- regras de fluxo (ajuste se quiser diferente):
+    -- 3 (Em Correção) -> Produção: Arte em Análise (3)
+    IF @Novo_Status_Arte_ID = 3
+    BEGIN
+        UPDATE Pedido SET Status_ID = 3 WHERE Pedido_ID = @PedidoId;
+    END
+
+    -- 4 (Aprovada) -> Produção: Arte Aprovada (4) -> cai na fila de impressão
+    IF @Novo_Status_Arte_ID = 4
+    BEGIN
+        UPDATE Pedido SET Status_ID = 4 WHERE Pedido_ID = @PedidoId;
+    END
+
+    -- 5 (Reprovada) -> seu trigger TR_ArteReprovada_ArquivaPedido já arquiva (Status_ID = 8)
+    -- então aqui não precisa fazer nada extra
 END
 GO
 
@@ -906,14 +918,3 @@ END
 GO
 
 
-SELECT OBJECT_DEFINITION(OBJECT_ID('dbo.SP_Atualizar_Status_Pedido')) AS ProcAtual;
-
-EXEC dbo.SP_Atualizar_Status_Pedido
-    @Pedido_ID = 1,
-    @Novo_Status_ID = 3,
-    @Usuario_ID = 3;
-
-	EXEC dbo.SP_Atualizar_Status_Pedido @Pedido_ID=1, @Novo_Status_ID=3, @Usuario_ID=2;
-SELECT TOP 10 * FROM Historico_Status ORDER BY Historico_ID DESC;
-
-SELECT * FROM Usuario;
