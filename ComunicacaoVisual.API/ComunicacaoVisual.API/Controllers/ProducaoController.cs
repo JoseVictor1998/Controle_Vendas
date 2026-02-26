@@ -27,6 +27,14 @@ namespace ComunicacaoVisual.API.Controllers
                 .FirstOrDefaultAsync(p => p.PedidoId == id);
 
             if (pedido == null) return NotFound("Pedido não encontrado.");
+
+            var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+            var idUsuarioLogado = User.FindFirst("UsuarioId")?.Value;
+
+            // Se for vendedor, só pode ver se ele for o dono do pedido
+            if (role == "Vendedor" && idUsuarioLogado != pedido.VendedorId?.ToString())
+                return Forbid("Você não tem permissão para ver pedidos de outros vendedores.");
+
             return Ok(pedido);
         }
 
@@ -337,30 +345,6 @@ namespace ComunicacaoVisual.API.Controllers
             return Ok(lista);
         }
 
-        [Authorize(Roles = "God,Admin,Producao,Impressao,Arte,Vendedor")]
-        [HttpGet("StatusListar")]
-        public IActionResult StatusListar()
-        {
-            try
-            {
-                var lista = _context.Database
-                    .SqlQuery<StatusOption>($@"
-                SELECT 
-                    Status_ID AS Id,
-                    Nome
-                FROM Status_Producao
-                WHERE Ativo = 1
-                ORDER BY Ordem
-            ")
-                    .ToList();
-
-                return Ok(lista);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { mensagem = "Erro ao listar status", erro = ex.Message });
-            }
-        }
 
         [Authorize(Roles = "God,Admin,Arte")]
         [HttpGet("StatusArteListar")]
@@ -385,6 +369,93 @@ namespace ComunicacaoVisual.API.Controllers
                 .ToListAsync();
 
             return Ok(lista);
+        }
+
+        [Authorize(Roles = "God,Admin,Vendedor,Arte,Impressao,Producao")]
+        [HttpGet("PedidoDetalhado/{id}")]
+        public async Task<IActionResult> GetPedidoDetalhado(int id)
+        {
+            // 1) Busca o pedido base
+            var pedido = await _context.Pedidos
+                .AsNoTracking()
+                .Where(p => p.PedidoId == id)
+                .Select(p => new
+                {
+                    p.PedidoId,
+                    p.OsExterna,
+                    p.DataPedido,
+                    p.ObservacaoGeral,
+                    p.ValorTotal,
+                    p.FormaPagamento,
+                    StatusId = p.StatusId,
+                    StatusNome = p.Status.Nome,
+                    ClienteId = p.ClienteId,
+                    ClienteNome = p.Cliente.Nome,
+                    ClienteEmail = p.Cliente.Email,
+                    VendedorId = p.VendedorId
+                })
+                .FirstOrDefaultAsync();
+
+            if (pedido == null) return NotFound("Pedido não encontrado.");
+
+            // 2) Regra: vendedor só vê os próprios pedidos
+            var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+            var idUsuarioLogado = User.FindFirst("UsuarioId")?.Value;
+
+            if (role == "Vendedor" && idUsuarioLogado != pedido.VendedorId?.ToString())
+                return Forbid("Você não tem permissão para ver pedidos de outros vendedores.");
+
+            // 3) Busca itens + tipo produto + arte (LEFT JOIN)
+            var itens = await (
+                from pi in _context.PedidoItems.AsNoTracking()
+                where pi.PedidoId == id
+                join tp in _context.TipoProdutos.AsNoTracking() on pi.TipoProdutoId equals tp.TipoProdutoId
+                join aa in _context.ArquivoArtes.AsNoTracking() on pi.ItemId equals aa.ItemId into aaJoin
+                from aa in aaJoin.DefaultIfEmpty()
+                join sa in _context.StatusArtes.AsNoTracking() on aa.StatusArteId equals sa.StatusArteId into saJoin
+                from sa in saJoin.DefaultIfEmpty()
+                select new ItemDetalhadoDto
+                {
+                    ItemId = pi.ItemId,
+                    TipoProdutoId = tp.TipoProdutoId,
+                    TipoProdutoNome = tp.Nome,
+                    Largura = pi.Largura,
+                    Altura = pi.Altura,
+                    Quantidade = pi.Quantidade,
+                    ObservacaoTecnica = pi.ObservacaoTecnica,
+                    CaminhoFoto = pi.CaminhoFoto,
+
+                    Arte = aa == null ? null : new ArquivoArteDto
+                    {
+                        ArquivoId = aa.ArquivoId,
+                        NomeArquivo = aa.NomeArquivo,
+                        CaminhoArquivo = aa.CaminhoArquivo,
+                        StatusArteId = aa.StatusArteId,
+                        StatusArteNome = sa != null ? sa.Nome : ""
+                    }
+                }
+            ).ToListAsync();
+
+            var dto = new PedidoDetalhadoDto
+            {
+                PedidoId = pedido.PedidoId,
+                OsExterna = pedido.OsExterna,
+                DataPedido = pedido.DataPedido,
+                ObservacaoGeral = pedido.ObservacaoGeral,
+                ValorTotal = pedido.ValorTotal,
+                FormaPagamento = pedido.FormaPagamento,
+                StatusId = pedido.StatusId,
+                StatusNome = pedido.StatusNome,
+                Cliente = new ClienteResumoDto
+                {
+                    ClienteId = pedido.ClienteId,
+                    Nome = pedido.ClienteNome,
+                    Email = pedido.ClienteEmail
+                },
+                Itens = itens
+            };
+
+            return Ok(dto);
         }
 
         [Authorize(Roles = "God,Admin,Vendedor")]
@@ -546,6 +617,9 @@ namespace ComunicacaoVisual.API.Controllers
         {
             try
             {
+                await _context.Database.ExecuteSqlInterpolatedAsync(
+    $@"EXEC sp_set_session_context @key = N'UsuarioId', @value = {model.UsuarioId};"
+);
 
                 await _context.Database.ExecuteSqlInterpolatedAsync($@"
                     EXEC SP_Atualizar_Status_Pedido 
