@@ -679,24 +679,33 @@ CREATE OR ALTER PROCEDURE SP_Atualizar_Status_Pedido
    @Pedido_ID INT,
    @Novo_Status_ID INT,
    @Usuario_ID INT,
-   @Valor_Total DECIMAL(10,2) = NULL,   -- Novos campos opcionais
+   @Valor_Total DECIMAL(10,2) = NULL,
    @Forma_Pagamento NVARCHAR(50) = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
+
     BEGIN TRANSACTION;
-   
-BEGIN TRY
-    DECLARE @bin VARBINARY(128) = CAST(@Usuario_ID AS VARBINARY(128));
-    SET CONTEXT_INFO @bin;
+    BEGIN TRY
 
-    UPDATE Pedido
-    SET Status_ID = @Novo_Status_ID,
-        Valor_Total = ISNULL(@Valor_Total, Valor_Total),
-        Forma_Pagamento = ISNULL(@Forma_Pagamento, Forma_Pagamento)
-    WHERE Pedido_ID = @Pedido_ID;
+        -- ✅ Passa o usuário para o TRIGGER via CONTEXT_INFO
+        DECLARE @ctx VARBINARY(128) = CONVERT(VARBINARY(128), CONVERT(INT, @Usuario_ID));
+        SET CONTEXT_INFO @ctx;
 
-   
+        -- trava financeira
+        IF @Novo_Status_ID = 7 AND (@Valor_Total IS NULL OR @Valor_Total <= 0 OR @Forma_Pagamento IS NULL)
+        BEGIN
+            RAISERROR ('Erro Financeiro: Informe o Valor Total e a Forma de Pagamento para entregar o pedido.', 16, 1);
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END
+
+        UPDATE Pedido
+        SET Status_ID = @Novo_Status_ID,
+            Valor_Total = ISNULL(@Valor_Total, Valor_Total),
+            Forma_Pagamento = ISNULL(@Forma_Pagamento, Forma_Pagamento)
+        WHERE Pedido_ID = @Pedido_ID;
+
         COMMIT TRANSACTION;
         PRINT 'Status e Financeiro atualizados com sucesso!';
     END TRY
@@ -705,7 +714,7 @@ BEGIN TRY
         THROW;
     END CATCH
 END
- GO
+GO
 CREATE OR ALTER PROCEDURE SP_Vincular_Arquivo_Arte
     @Item_ID INT,
     @Nome_Arquivo NVARCHAR(100), -- Novo campo obrigatório
@@ -840,16 +849,28 @@ BEGIN
 END
 
 GO
-CREATE OR ALTER TRIGGER TR_Historico_Status_Insert
-ON Pedido
-AFTER INSERT
+USE Controle_Vendas;
+GO
+
+CREATE OR ALTER TRIGGER TR_Gerar_Historico_Status
+ON dbo.Pedido
+AFTER UPDATE
 AS
 BEGIN
-    INSERT INTO Historico_Status (Pedido_ID, Status_ID, Data_Mudanca, Usuario_ID)
-    SELECT Pedido_ID, Status_ID, GETDATE(), 1
-    FROM inserted;
-END
+    SET NOCOUNT ON;
 
+    IF UPDATE(Status_ID)
+    BEGIN
+        DECLARE @uid INT = TRY_CONVERT(INT, SESSION_CONTEXT(N'UsuarioId'));
+        IF @uid IS NULL SET @uid = 1;
+
+        INSERT INTO dbo.Historico_Status (Pedido_ID, Status_ID, Data_Mudanca, Usuario_ID)
+        SELECT i.Pedido_ID, i.Status_ID, GETDATE(), @uid
+        FROM inserted i
+        JOIN deleted d ON i.Pedido_ID = d.Pedido_ID
+        WHERE i.Status_ID <> d.Status_ID;
+    END
+END
 GO
 CREATE OR ALTER TRIGGER TR_StatusArte_RefleteNoPedido
 ON Arquivo_Arte
@@ -885,4 +906,14 @@ END
 GO
 
 
+SELECT OBJECT_DEFINITION(OBJECT_ID('dbo.SP_Atualizar_Status_Pedido')) AS ProcAtual;
 
+EXEC dbo.SP_Atualizar_Status_Pedido
+    @Pedido_ID = 1,
+    @Novo_Status_ID = 3,
+    @Usuario_ID = 3;
+
+	EXEC dbo.SP_Atualizar_Status_Pedido @Pedido_ID=1, @Novo_Status_ID=3, @Usuario_ID=2;
+SELECT TOP 10 * FROM Historico_Status ORDER BY Historico_ID DESC;
+
+SELECT * FROM Usuario;

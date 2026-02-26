@@ -362,6 +362,31 @@ namespace ComunicacaoVisual.API.Controllers
             }
         }
 
+        [Authorize(Roles = "God,Admin,Arte")]
+        [HttpGet("StatusArteListar")]
+        public async Task<IActionResult> StatusArteListar()
+        {
+            var lista = await _context.StatusArtes
+                .OrderBy(s => s.StatusArteId)
+                .Select(s => new StatusOption { Id = s.StatusArteId, Nome = s.Nome })
+                .ToListAsync();
+
+            return Ok(lista);
+        }
+
+        [Authorize(Roles = "God,Admin,Vendedor,Arte,Impressao,Producao")]
+        [HttpGet("StatusProducaoListar")]
+        public async Task<IActionResult> StatusProducaoListar()
+        {
+            var lista = await _context.StatusProducaos
+                .Where(s => s.Ativo == true)
+                .OrderBy(s => s.Ordem)
+                .Select(s => new StatusOption { Id = s.StatusId, Nome = s.Nome })
+                .ToListAsync();
+
+            return Ok(lista);
+        }
+
         [Authorize(Roles = "God,Admin,Vendedor")]
         [HttpPost("CriarPedido")]
         public async Task<IActionResult> CriarPedidoComItem([FromBody] CriarPedidoComItemInput model)
@@ -438,16 +463,25 @@ namespace ComunicacaoVisual.API.Controllers
 
         }
 
-        [Authorize(Roles = "God,Admin,Vendedor")]
+
+
+        [Authorize(Roles = "God,Admin,Vendedor,Arte")]
         [HttpPut("AtualizarStatusArte")]
         public async Task<IActionResult> AtualizarStatusArte([FromBody] AtualizarStatusArteInput model)
         {
             try
             {
+                // seta o usuário no contexto da sessão (para o trigger do histórico)
+                await _context.Database.ExecuteSqlInterpolatedAsync(
+                    $@"EXEC sp_set_session_context @key = N'UsuarioId', @value = {model.UsuarioId};"
+                );
+
                 await _context.Database.ExecuteSqlInterpolatedAsync($@"
             EXEC SP_Atualizar_Status_Arte
                 @Item_ID = {model.ItemId},
-                @Novo_Status_Arte_ID = {model.NovoStatusArteId}");
+                @Novo_Status_Arte_ID = {model.NovoStatusArteId},
+                @Usuario_ID = {model.UsuarioId};
+        ");
 
                 return Ok(new { mensagem = "Status da arte atualizado com sucesso!" });
             }
@@ -465,12 +499,15 @@ namespace ComunicacaoVisual.API.Controllers
         {
             try
             {
-                
+                await _context.Database.ExecuteSqlInterpolatedAsync(
+      $@"EXEC sp_set_session_context @key = N'UsuarioId', @value = {model.UsuarioId};"
+  );
+
                 await _context.Database.ExecuteSqlInterpolatedAsync($@"
-            EXEC SP_Atualizar_Status_Pedido 
-                @Pedido_ID = {model.PedidoId}, 
-                @Novo_Status_ID = {model.NovoStatusId}, 
-                @Usuario_ID = {model.UsuarioId}");
+    EXEC SP_Atualizar_Status_Pedido 
+        @Pedido_ID = {model.PedidoId}, 
+        @Novo_Status_ID = {model.NovoStatusId}, 
+        @Usuario_ID = {model.UsuarioId}");
 
                 return Ok(new { mensagem = "Status atualizado! O pedido avançou na fila." });
             }
