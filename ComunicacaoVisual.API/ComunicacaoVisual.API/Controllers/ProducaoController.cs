@@ -190,7 +190,7 @@ namespace ComunicacaoVisual.API.Controllers
                 });
             }
         }
-
+       
         [Authorize(Roles = "God,Admin,Vendedor")]
         [HttpGet("HistoricoPedidoCliente")]
         public async Task<IActionResult> GetHistoricoPedidoCliente([FromQuery] string? filtro)
