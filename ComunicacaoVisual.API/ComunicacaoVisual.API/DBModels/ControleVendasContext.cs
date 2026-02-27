@@ -66,7 +66,7 @@ public partial class ControleVendasContext : DbContext
 
     public virtual DbSet<VwFilaImpressao> VwFilaImpressaos { get; set; }
 
-    public virtual DbSet<VwFilaProducaoCompletum> VwFilaProducaoCompleta { get; set; }
+    public virtual DbSet<VwFilaProducaoCompleta> VwFilaProducaoCompleta { get; set; }
 
     public virtual DbSet<VwHistoricoPedidosCliente> VwHistoricoPedidosClientes { get; set; }
 
@@ -618,26 +618,27 @@ public partial class ControleVendasContext : DbContext
             entity.Property(e => e.Produto).HasMaxLength(100);
         });
 
-        modelBuilder.Entity<VwFilaProducaoCompletum>(entity =>
+        modelBuilder.Entity<VwFilaProducaoCompleta>(entity =>
         {
-            entity
-                .HasNoKey()
-                .ToView("VW_Fila_Producao_Completa");
+            entity.HasNoKey();
+            entity.ToView("VW_Fila_Producao_Completa");
 
-            entity.Property(e => e.Altura).HasColumnType("decimal(10, 2)");
-            entity.Property(e => e.CaminhoFoto)
-                .HasMaxLength(255)
-                .HasColumnName("Caminho_Foto");
-            entity.Property(e => e.Cliente).HasMaxLength(50);
-            entity.Property(e => e.HorasDesdeAbertura).HasColumnName("Horas_Desde_Abertura");
-            entity.Property(e => e.Largura).HasColumnType("decimal(10, 2)");
-            entity.Property(e => e.Os)
-                .HasMaxLength(6)
-                .HasColumnName("OS");
-            entity.Property(e => e.Produto).HasMaxLength(100);
-            entity.Property(e => e.VendedorResponsavel)
-                .HasMaxLength(255)
-                .HasColumnName("Vendedor_Responsavel");
+            entity.Property(e => e.Os).HasColumnName("Os");
+            entity.Property(e => e.Cliente).HasColumnName("Cliente");
+            entity.Property(e => e.Produto).HasColumnName("Produto");
+
+            entity.Property(e => e.MaterialBase).HasColumnName("MaterialBase");
+
+            entity.Property(e => e.Largura).HasColumnName("Largura").HasColumnType("decimal(10, 2)");
+            entity.Property(e => e.Altura).HasColumnName("Altura").HasColumnType("decimal(10, 2)");
+            entity.Property(e => e.Quantidade).HasColumnName("Quantidade");
+
+            entity.Property(e => e.CaminhoFoto).HasColumnName("CaminhoFoto");
+            entity.Property(e => e.HorasDesdeAbertura).HasColumnName("HorasDesdeAbertura");
+            entity.Property(e => e.VendedorResponsavel).HasColumnName("VendedorResponsavel");
+
+            entity.Property(e => e.ObservacaoGeral).HasColumnName("ObservacaoGeral");
+            entity.Property(e => e.ObservacaoTecnica).HasColumnName("ObservacaoTecnica");
         });
 
         modelBuilder.Entity<VwHistoricoPedidosCliente>(entity =>

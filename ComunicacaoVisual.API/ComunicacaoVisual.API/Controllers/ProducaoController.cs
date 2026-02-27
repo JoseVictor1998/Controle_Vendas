@@ -174,7 +174,7 @@ namespace ComunicacaoVisual.API.Controllers
 
         [Authorize(Roles = "God,Admin,Producao")]
         [HttpGet("FilaProducaoCompleta")]
-        public async Task<IActionResult> GetFilaProdutoCompleta()
+        public async Task<IActionResult> GetFilaProducaoCompleta()
         {
             try
             {

@@ -398,13 +398,21 @@ GO
 -- View de Produção com Foto e SLA (Tempo de produção)
 CREATE OR ALTER VIEW VW_Fila_Producao_Completa AS 
 SELECT 
-    P.OS_Externa AS OS, 
+    P.OS_Externa AS Os, 
     C.Nome AS Cliente, 
     TP.Nome AS Produto,
-    PI.Largura, PI.Altura, PI.Quantidade, 
-    PI.Caminho_Foto, -- Nova coluna de foto
-    DATEDIFF(HOUR, P.Data_Pedido, GETDATE()) AS Horas_Desde_Abertura,
-    U.Nome AS Vendedor_Responsavel
+    (SELECT STRING_AGG(M.Nome, ' / ') FROM 
+        Tipo_Produto_Material TPM 
+        JOIN Material M ON TPM.Material_ID = M.Material_ID
+        WHERE TPM.Tipo_Produto_ID = TP.Tipo_Produto_ID) AS MaterialBase,
+    PI.Largura, 
+    PI.Altura, 
+    PI.Quantidade, 
+    PI.Caminho_Foto AS CaminhoFoto, 
+    DATEDIFF(HOUR, P.Data_Pedido, GETDATE()) AS HorasDesdeAbertura,
+    U.Nome AS VendedorResponsavel,
+    P.Observacao_Geral AS ObservacaoGeral,
+    PI.Observacao_Tecnica AS ObservacaoTecnica
 FROM Pedido P
 JOIN Clientes C ON P.Cliente_ID = C.Cliente_id
 JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID 
@@ -916,5 +924,4 @@ BEGIN
     WHERE i.Status_Arte_ID = 5;
 END
 GO
-
 

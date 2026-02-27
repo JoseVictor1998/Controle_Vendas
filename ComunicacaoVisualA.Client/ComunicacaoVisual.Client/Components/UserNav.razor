@@ -1,0 +1,31 @@
+﻿@inject IJSRuntime JS
+@inject NavigationManager Nav
+
+<div class="navbar navbar-dark bg-dark shadow-sm p-3 mb-4 rounded">
+    <div class="container-fluid d-flex justify-content-between align-items-center">
+        <div class="text-white">
+            <i class="bi bi-person-circle"></i>
+            <strong>Operador:</strong> @userName
+            <span class="badge bg-info ms-2">@userLevel</span>
+        </div>
+        <button class="btn btn-outline-danger btn-sm" @onclick="Logout">Sair do Turno</button>
+    </div>
+</div>
+
+@code {
+    private string? userName;
+    private string? userLevel;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Busca os dados reais do LocalStorage que vimos na sua imagem do console
+        userName = await JS.InvokeAsync<string>("localStorage.getItem", "userName");
+        userLevel = await JS.InvokeAsync<string>("localStorage.getItem", "userLevel");
+    }
+
+    private async Task Logout()
+    {
+        await JS.InvokeVoidAsync("localStorage.clear");
+        Nav.NavigateTo("/login");
+    }
+}

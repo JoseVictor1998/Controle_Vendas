@@ -1,0 +1,467 @@
+﻿@page "/novo-pedido"
+
+@using System.Linq
+@using System.Net.Http.Headers
+@using System.Net.Http.Json
+@using System.Text.Json
+@using Microsoft.AspNetCore.Components.Forms
+@using ComunicacaoVisual.Client.Models
+
+@inject HttpClient Http
+@inject ComunicacaoVisual.Client.Services.PedidoService PedidoService
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+<style>
+    .page { background:#0f172a; min-height:100vh; padding:2rem; color:#f8fafc; }
+    .container { max-width: 880px; margin: 0 auto; }
+    .card { background:#1e293b; border:1px solid #334155; border-radius:14px; padding:1.25rem; }
+    .muted { color:#e2e8f0; }
+    .label { color:#cbd5e1; font-size:.75rem; text-transform:uppercase; letter-spacing:.06em; margin-bottom:.25rem; display:block; }
+    .input, .textarea { width:100%; background:#0f172a; border:1px solid #475569; border-radius:10px; padding:.6rem .75rem; color:#fff; }
+    .textarea { min-height: 92px; resize: vertical; }
+    .grid2 { display:grid; grid-template-columns: 1fr 1fr; gap:1rem; }
+    .grid3 { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:1rem; }
+    .btn { border-radius: 10px; padding:.65rem .9rem; border:1px solid transparent; cursor:pointer; font-weight:600; }
+    .btn-yellow { background:#fedf00; color:#0f172a; }
+    .btn-yellow:disabled { opacity:.55; cursor:not-allowed; }
+    .btn-green { background:#009b3a; color:#fff; }
+    .btn-outline { background:transparent; border-color:#475569; color:#cbd5e1; }
+    .btn-outline:hover { background:#334155; }
+    .row { display:flex; gap:.75rem; align-items:center; flex-wrap:wrap; }
+    .pill { display:inline-block; padding:.18rem .5rem; border-radius:999px; background:#0b1224; border:1px solid #334155; color:#cbd5e1; font-size:.75rem; }
+    .preview { width: 56px; height: 56px; border-radius: 12px; object-fit: cover; border:1px solid #475569; }
+    .alert { border-radius: 12px; padding:.75rem 1rem; margin-top: 1rem; }
+    .ok { background: rgba(34,197,94,.12); border:1px solid rgba(34,197,94,.35); color:#bbf7d0; }
+    .err { background: rgba(239,68,68,.12); border:1px solid rgba(239,68,68,.35); color:#fecaca; }
+    .hint { color:#94a3b8; font-size:.8rem; margin-top:.35rem; }
+
+    .file-hidden { display:none !important; }
+</style>
+
+<div class="page">
+    <div class="container">
+        <div style="margin-bottom: 1rem;">
+            <h1 style="font-size: 1.6rem; font-weight: 800;">Novo Pedido</h1>
+            <div class="muted">Crie um pedido e envie para produção</div>
+        </div>
+
+        @if (carregandoListas)
+        {
+            <div class="card">
+                <div class="muted">Carregando clientes e produtos...</div>
+            </div>
+        }
+        else if (step == 2)
+        {
+            <h2 style="font-size: 1.2rem; font-weight: 800; margin: 1rem 0; color:#fff;">
+                Confirmação do Pedido
+            </h2>
+
+            <div class="card">
+                <div class="grid2" style="margin-bottom: 1rem;">
+                    <div>
+                        <div style="color:#fff; font-size:.75rem;">Cliente</div>
+                        <div style="font-weight:800; color:#fff;">@clienteNome</div>
+                    </div>
+
+                    <div>
+                        <div style="color:#fff; font-size:.75rem;">OS Externa</div>
+                        <div style="font-weight:800; color:#fff;">@model.OsExterna</div>
+                    </div>
+
+                    <div>
+                        <div style="color:#fff; font-size:.75rem;">Produto</div>
+                        <div style="font-weight:800; color:#fff;">@produtoNome</div>
+                    </div>
+
+                    <div>
+                        <div style="color:#fff; font-size:.75rem;">Dimensões</div>
+                        <div style="font-weight:800; color:#fff;">@model.Largura x @model.Altura</div>
+                    </div>
+
+                    <div>
+                        <div style="color:#fff; font-size:.75rem;">Quantidade</div>
+                        <div style="font-weight:800; color:#fff;">@model.Quantidade</div>
+                    </div>
+
+                    <div>
+                        <div style="color:#fff; font-size:.75rem;">Vendedor</div>
+                        <div style="font-weight:800; color:#fff;">@vendedorNome</div>
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(model.ObservacaoGeral))
+                {
+                    <div style="margin-bottom:.75rem;">
+                        <div style="color:#fff; font-size:.75rem;">Obs. Geral</div>
+                        <div style="color:#fff;">@model.ObservacaoGeral</div>
+                    </div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(model.ObservacaoTecnica))
+                {
+                    <div style="margin-bottom:.75rem;">
+                        <div style="color:#fff; font-size:.75rem;">Obs. Técnica</div>
+                        <div style="color:#fff;">@model.ObservacaoTecnica</div>
+                    </div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(model.CaminhoFoto))
+                {
+                    <div style="margin-bottom:.75rem;">
+                        <div style="color:#fff; font-size:.75rem;">Foto (URL)</div>
+                        <div class="row">
+                            <span class="pill">@model.CaminhoFoto</span>
+
+                            @if (!string.IsNullOrWhiteSpace(previewUrl))
+                            {
+                                <img class="preview" src="@previewUrl" alt="Prévia" />
+                            }
+                        </div>
+                    </div>
+                }
+
+                <div class="row" style="padding-top: .75rem;">
+                    <button class="btn btn-outline" @onclick="() => step = 1" disabled="@salvando">
+                        Voltar
+                    </button>
+
+                    <button class="btn btn-green" style="flex:1;" @onclick="Confirmar" disabled="@salvando">
+                        @(salvando ? "Enviando..." : "Confirmar Pedido")
+                    </button>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(msg))
+                {
+                    <div class="alert @(ok ? "ok" : "err")">@msg</div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="card">
+                <div class="grid2">
+                    <div>
+                        <label class="label">Cliente</label>
+
+                        <input class="input"
+                               list="clientesList"
+                               placeholder="Digite o nome do cliente..."
+                               @bind="clienteNome"
+                               @bind:event="oninput" />
+
+                        <datalist id="clientesList">
+                            @foreach (var c in clientes)
+                            {
+                                <option value="@c.Nome"></option>
+                            }
+                        </datalist>
+
+                        <div class="hint">Comece a digitar que aparecem os clientes salvos.</div>
+                    </div>
+
+                    <div>
+                        <label class="label">OS Externa (até 6)</label>
+                        <input class="input" maxlength="6" @bind="model.OsExterna" />
+                    </div>
+                </div>
+
+                <div style="margin-top: 1rem;">
+                    <label class="label">Produto</label>
+
+                    <input class="input"
+                           list="produtosList"
+                           placeholder="Digite o nome do produto..."
+                           @bind="produtoNome"
+                           @bind:event="oninput" />
+
+                    <datalist id="produtosList">
+                        @foreach (var p in produtos)
+                        {
+                            <option value="@p.Nome"></option>
+                        }
+                    </datalist>
+
+                    <div class="hint">Comece a digitar que aparecem os produtos salvos.</div>
+                </div>
+
+                <div class="grid3" style="margin-top: 1rem;">
+                    <div>
+                        <label class="label">Largura</label>
+                        <input class="input" type="number" step="0.01" @bind="model.Largura" />
+                    </div>
+
+                    <div>
+                        <label class="label">Altura</label>
+                        <input class="input" type="number" step="0.01" @bind="model.Altura" />
+                    </div>
+
+                    <div>
+                        <label class="label">Quantidade</label>
+                        <input class="input" type="number" min="1" @bind="model.Quantidade" />
+                    </div>
+                </div>
+
+                <div style="margin-top: 1rem;">
+                    <label class="label">Observação Geral</label>
+                    <textarea class="textarea" @bind="model.ObservacaoGeral"></textarea>
+                </div>
+
+                <div style="margin-top: 1rem;">
+                    <label class="label">Observação Técnica</label>
+                    <textarea class="textarea" @bind="model.ObservacaoTecnica"></textarea>
+                </div>
+
+                <div style="margin-top: 1rem;">
+                    <label class="label">Foto do Produto</label>
+
+                    <div class="row">
+                        <label class="btn btn-outline" style="display:inline-flex; align-items:center; gap:.5rem;">
+                            Selecionar imagem
+                            <InputFile OnChange="OnFileSelected" accept="image/*" class="file-hidden" />
+                        </label>
+
+                        @if (!string.IsNullOrWhiteSpace(fileName))
+                        {
+                            <span class="hint" style="color:#fff;">@fileName</span>
+                        }
+
+                        @if (!string.IsNullOrWhiteSpace(previewUrl))
+                        {
+                            <img class="preview" src="@previewUrl" alt="Prévia" />
+                        }
+                    </div>
+
+                    @if (!string.IsNullOrWhiteSpace(model.CaminhoFoto))
+                    {
+                        <div class="hint" style="color:#fff;">Salvo em: @model.CaminhoFoto</div>
+                    }
+                </div>
+
+                <button class="btn btn-yellow" style="width:100%; margin-top:1rem;"
+                        @onclick="Revisar" disabled="@(!CanProceed)">
+                    Revisar Pedido
+                </button>
+
+                @if (!string.IsNullOrWhiteSpace(msg))
+                {
+                    <div class="alert @(ok ? "ok" : "err")">@msg</div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private class ClienteOption
+    {
+        public int Id { get; set; }
+        public string Nome { get; set; } = "";
+    }
+
+    private class ProdutoOption
+    {
+        public int Id { get; set; }
+        public string Nome { get; set; } = "";
+    }
+
+    private class UploadResult
+    {
+        public string Url { get; set; } = "";
+    }
+
+    private int step = 1;
+    private bool carregandoListas = true;
+    private bool salvando;
+    private bool ok;
+    private string? msg;
+
+    private string clienteNome = "";
+    private string produtoNome = "";
+    private string vendedorNome = "";
+
+    private List<ClienteOption> clientes = new();
+    private List<ProdutoOption> produtos = new();
+
+    private CriarPedidoComItemInput model = new()
+    {
+        Quantidade = 1
+    };
+
+    private string? previewUrl;
+    private string? fileName;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("localStorage.getItem", "authToken");
+            if (!string.IsNullOrWhiteSpace(token))
+                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            vendedorNome = await JS.InvokeAsync<string>("localStorage.getItem", "userName") ?? "";
+            model.VendedorID = await GetUsuarioIdFromJwtAsync();
+
+            clientes = await Http.GetFromJsonAsync<List<ClienteOption>>("api/Cliente/Listar") ?? new();
+            produtos = await Http.GetFromJsonAsync<List<ProdutoOption>>("api/TipoProduto/Listar") ?? new();
+        }
+        catch (Exception ex)
+        {
+            msg = $"Erro ao carregar listas: {ex.Message}";
+            ok = false;
+        }
+        finally
+        {
+            carregandoListas = false;
+        }
+    }
+
+    private bool CanProceed =>
+        ResolveIdsFromNames() &&
+        !string.IsNullOrWhiteSpace(model.OsExterna) &&
+        model.OsExterna.Length <= 6 &&
+        model.Largura > 0 &&
+        model.Altura > 0 &&
+        model.Quantidade > 0 &&
+        model.VendedorID > 0;
+
+    private bool ResolveIdsFromNames()
+    {
+        var c = clientes.FirstOrDefault(x => string.Equals(x.Nome, clienteNome, StringComparison.OrdinalIgnoreCase));
+        model.ClienteId = c?.Id ?? 0;
+
+        var p = produtos.FirstOrDefault(x => string.Equals(x.Nome, produtoNome, StringComparison.OrdinalIgnoreCase));
+        model.TipoProdutoId = p?.Id ?? 0;
+
+        return model.ClienteId > 0 && model.TipoProdutoId > 0;
+    }
+
+    private async Task OnFileSelected(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            var file = e.File;
+            if (file is null) return;
+
+            fileName = file.Name;
+
+            // Preview
+            using var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+
+            previewUrl = $"data:{file.ContentType};base64,{Convert.ToBase64String(ms.ToArray())}";
+
+            // Upload
+            var content = new MultipartFormDataContent();
+
+            var fileContent = new ByteArrayContent(ms.ToArray());
+            fileContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType);
+
+            content.Add(fileContent, "file", file.Name);
+
+            var resp = await Http.PostAsync("api/Upload/Imagem", content);
+
+            if (resp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                ok = false;
+                msg = "Sessão expirada. Faça login novamente.";
+                return;
+            }
+
+            resp.EnsureSuccessStatusCode();
+
+            var result = await resp.Content.ReadFromJsonAsync<UploadResult>();
+            if (result is not null && !string.IsNullOrWhiteSpace(result.Url))
+            {
+                model.CaminhoFoto = result.Url;
+                ok = true;
+                msg = "Imagem enviada com sucesso!";
+            }
+            else
+            {
+                ok = false;
+                msg = "Upload realizado, mas a API não retornou a URL da imagem.";
+            }
+        }
+        catch (Exception ex)
+        {
+            ok = false;
+            msg = $"Erro ao enviar imagem: {ex.Message}";
+        }
+    }
+
+    private void Revisar()
+    {
+        msg = null;
+
+        if (!CanProceed)
+        {
+            ok = false;
+            msg = "Preencha os campos obrigatórios e selecione Cliente/Produto a partir das sugestões.";
+            return;
+        }
+
+        step = 2;
+    }
+
+    private async Task Confirmar()
+    {
+        salvando = true;
+        msg = null;
+
+        ResolveIdsFromNames();
+
+        var (success, message) = await PedidoService.CriarPedidoAsync(model);
+
+        ok = success;
+        msg = message;
+        salvando = false;
+
+        if (ok)
+        {
+            model = new() { Quantidade = 1, VendedorID = model.VendedorID };
+            clienteNome = "";
+            produtoNome = "";
+            previewUrl = null;
+            fileName = null;
+            step = 1;
+        }
+    }
+
+    private async Task<int> GetUsuarioIdFromJwtAsync()
+    {
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "authToken");
+        if (string.IsNullOrWhiteSpace(token)) return 0;
+
+        try
+        {
+            var parts = token.Split('.');
+            if (parts.Length != 3) return 0;
+
+            var payload = parts[1].Replace('-', '+').Replace('_', '/');
+            switch (payload.Length % 4)
+            {
+                case 2: payload += "=="; break;
+                case 3: payload += "="; break;
+            }
+
+            var jsonBytes = Convert.FromBase64String(payload);
+            using var doc = JsonDocument.Parse(jsonBytes);
+
+            if (doc.RootElement.TryGetProperty("UsuarioId", out var idProp))
+            {
+                var s = idProp.GetString();
+                if (int.TryParse(s, out var id))
+                    return id;
+            }
+
+            return 0;
+        }
+        catch
+        {
+            return 0;
+        }
+    }
+}

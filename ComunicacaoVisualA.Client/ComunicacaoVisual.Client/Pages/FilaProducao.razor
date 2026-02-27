@@ -1,0 +1,154 @@
+﻿@page "/fila-producao"
+@using Microsoft.AspNetCore.Authorization
+@using ComunicacaoVisual.Client.Models
+@using ComunicacaoVisual.Client.Services
+@attribute [Authorize(Roles = "God,Admin,Producao")]
+
+@inject FilaProducaoService Service
+@inject IJSRuntime JS
+
+<style>
+    .page-container { background-color: #0f172a; min-height: 100vh; padding: 2rem; color: #f8fafc; }
+    .header-section { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+    
+    .new-orders-badge { 
+        background-color: #fedf00; color: #0f172a; padding: 0.5rem 1rem; 
+        border-radius: 9999px; font-weight: bold; display: flex; align-items: center; gap: 0.5rem;
+    }
+
+    .custom-table { width: 100%; border-collapse: separate; border-spacing: 0 0.75rem; }
+    .custom-table thead th { color: #94a3b8; text-transform: uppercase; font-size: 0.75rem; padding: 1rem; border: none; }
+    
+    .row-base { background-color: #1e293b; transition: all 0.2s; border-radius: 8px; }
+    .row-base:hover { background-color: #334155; transform: scale(1.005); }
+    
+    .material-pill { background-color: #fedf00; color: #0f172a; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 0.8rem; }
+
+    /* TOOLTIP INTERATIVO */
+    .obs-box { cursor: help; position: relative; display: inline-block; }
+    .obs-content { 
+        display: none; position: absolute; z-index: 50; background: #0f172a; border: 1px solid #334155;
+        padding: 1rem; border-radius: 0.5rem; width: 300px; box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.5);
+        color: #f8fafc; text-align: left;
+    }
+    .obs-box:hover .obs-content { display: block; }
+</style>
+
+<div class="page-container">
+    <div class="header-section">
+        <div>
+            <h1 style="font-size: 1.5rem; font-weight: 700;">Fila de Produção</h1>
+            <p style="color: #94a3b8; font-size: 0.875rem;">Itens aguardando ou em processo de fabricação</p>
+        </div>
+        @if (lista?.Count > 0)
+        {
+            <div class="new-orders-badge">
+                <i class="oi oi-timer"></i> @lista.Count Pedidos Ativos
+            </div>
+        }
+    </div>
+
+    <table class="custom-table">
+        <thead>
+            <tr>
+                <th>Foto</th>
+                <th>Tempo</th>
+                <th>OS</th>
+                <th>Produto / Cliente</th>
+                <th>Material</th>
+                <th>Dimensões</th>
+                <th>Vendedor</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (lista == null)
+            {
+                <tr><td colspan="8" class="text-center p-5">Sincronizando banco de dados...</td></tr>
+            }
+            else if (lista.Count == 0)
+            {
+                <tr><td colspan="8" class="text-center p-5 text-muted">Nenhum pedido na fila de produção.</td></tr>
+            }
+            else
+            {
+                foreach (var item in lista)
+                {
+                    <tr class="row-base">
+                        <td style="width: 80px; padding: 1rem;">
+                            @if (!string.IsNullOrEmpty(item.CaminhoFoto))
+                            {
+                                <img src="@item.CaminhoFoto" 
+                                     style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px; border: 1px solid #334155;" />
+                            }
+                            else
+                            {
+                                <div style="width: 50px; height: 50px; background: #1e293b; display: flex; align-items: center; justify-content: center; border-radius: 8px;">
+                                    <i class="oi oi-image" style="color: #475569;"></i>
+                                </div>
+                            }
+                        </td>
+                        <td style="padding: 1rem; color: #fedf00;">
+                            <i class="oi oi-timer"></i> @(item.HorasDesdeAbertura ?? 0)h
+                        </td>
+                        <td style="font-weight: 700;">@item.Os</td>
+                        <td>
+                            <div class="obs-box">
+                                <span style="font-weight: 600;">@item.Produto</span>
+                                <div class="obs-content">
+                                    <strong style="color: #fedf00;">📋 Obs. Geral:</strong><br/>
+                                    <span>@(item.ObservacaoGeral ?? "-")</span><br/><br/>
+                                    <strong style="color: #f87171;">🛠 Obs. Técnica:</strong><br/>
+                                    <span>@(item.ObservacaoTecnica ?? "-")</span>
+                                </div>
+                            </div><br/>
+                            <small style="color: #94a3b8;">@item.Cliente</small>
+                        </td>
+                        <td>
+                            <span class="material-pill">@(item.MaterialBase ?? "N/A")</span>
+                        </td>
+                        <td>
+                            <span>@item.Largura.ToString("N2") x @item.Altura.ToString("N2")</span><br/>
+                            <small style="color: #94a3b8;">Qtd: @item.Quantidade</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-dark" style="border: 1px solid #334155; color: #f8fafc;">
+                                 @item.VendedorResponsavel
+                             </span>
+                        </td>
+                        <td>
+                            <button class="btn btn-success btn-sm" @onclick="() => Concluir(item.Os)">
+                                <i class="oi oi-check"></i> Concluir
+                            </button>
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    List<FilaProducaoCompletaDTO>? lista;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try 
+        {
+            lista = await Service.Listar();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao carrergar: {ex.Message}");
+            lista = new();
+        }
+    }
+
+    private async Task Concluir(string os)
+    {
+        if (await JS.InvokeAsync<bool>("confirm", $"Deseja finalizar a produção da OS {os}?"))
+        {
+            await JS.InvokeVoidAsync("alert", $"OS {os} marcada como produzida!");
+        }
+    }
+}

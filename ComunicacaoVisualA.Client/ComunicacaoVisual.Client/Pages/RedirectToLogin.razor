@@ -1,0 +1,14 @@
+﻿@inject NavigationManager Nav
+
+@code {
+    protected override void OnInitialized()
+    {
+        var relative = Nav.ToBaseRelativePath(Nav.Uri);
+
+        // evita loop se já estiver no /login
+        if (!relative.StartsWith("login"))
+        {
+            Nav.NavigateTo("/login", replace: true);
+        }
+    }
+}

@@ -1,0 +1,106 @@
+﻿@page "/clientes"
+
+@using ComunicacaoVisual.Client.Models
+@using ComunicacaoVisual.Client.Services
+
+@inject ClienteService ClienteService
+
+
+<h3>Cadastro Cliente</h3>
+
+
+<input placeholder="Nome"
+       @bind="cliente.Nome" />
+
+
+<input placeholder="Documento"
+       @bind="cliente.Documento" />
+
+
+<input placeholder="Email"
+       @bind="cliente.Email" />
+
+
+<input placeholder="DDD"
+       @bind="cliente.DDD" />
+
+
+<input placeholder="Telefone"
+       @bind="cliente.NumeroTelefone" />
+
+
+<input placeholder="Cidade"
+       @bind="cliente.Cidade" />
+
+
+<input placeholder="CEP"
+       @bind="cliente.CEP" />
+
+
+<input placeholder="Bairro"
+       @bind="cliente.Bairro" />
+
+
+<input placeholder="Rua"
+       @bind="cliente.Rua" />
+
+
+<input type="number"
+       placeholder="Número"
+       @bind="cliente.NumeroEndereco" />
+
+
+<select @bind="cliente.Tipo">
+
+    <option value="PF">Pessoa Física</option>
+
+    <option value="PJ">Pessoa Jurídica</option>
+
+</select>
+
+
+<br />
+
+<button @onclick="Salvar">
+
+    Cadastrar Cliente
+
+</button>
+
+
+<p>@mensagem</p>
+
+
+@code {
+
+
+    CadastrarClienteDTO cliente = new();
+
+    string mensagem = "";
+
+
+    async Task Salvar()
+    {
+
+        var sucesso = await ClienteService
+        .CadastrarCliente(cliente);
+
+
+        if (sucesso)
+        {
+
+            mensagem = "Cliente cadastrado com sucesso";
+
+            cliente = new();
+
+        }
+        else
+        {
+
+            mensagem = "Erro ao cadastrar";
+
+        }
+
+    }
+
+}

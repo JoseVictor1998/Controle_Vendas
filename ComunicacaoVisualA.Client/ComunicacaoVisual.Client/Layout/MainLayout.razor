@@ -1,0 +1,33 @@
+﻿@inherits LayoutComponentBase
+
+<style>
+    /* Força o fundo escuro em toda a área de conteúdo */
+    .page {
+        background-color: #0f172a !important;
+        color: #f8fafc;
+    }
+
+    main {
+        background-color: #0f172a !important;
+    }
+
+    /* Ajusta a barra superior se ela ainda estiver branca */
+    .top-row {
+        background-color: #1e293b !important;
+        border-bottom: 1px solid #334155 !important;
+        color: white !important;
+    }
+</style>
+<div class="page">
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+
+    <main>
+        <UserNav /> 
+
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>

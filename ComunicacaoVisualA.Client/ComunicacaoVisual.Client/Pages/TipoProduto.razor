@@ -1,0 +1,77 @@
+﻿@page "/tipos-produto"
+
+@using ComunicacaoVisual.Client.Models
+@using ComunicacaoVisual.Client.Services
+
+@inject TipoProdutoService Service
+
+
+<h3 style="color:white">Tipos de Produto</h3>
+
+<br />
+
+@if (lista == null)
+{
+
+    <p>Carregando...</p>
+
+}
+else
+{
+
+
+    <table class="table table-dark table-hover">
+
+        <thead>
+
+            <tr>
+
+                <th>ID</th>
+
+                <th>Nome</th>
+
+            </tr>
+
+        </thead>
+
+        <tbody>
+
+
+            @foreach (var item in lista)
+            {
+
+                <tr>
+
+                    <td>@item.Id</td>
+
+                    <td>@item.Nome</td>
+
+                </tr>
+
+            }
+
+
+        </tbody>
+
+    </table>
+
+
+}
+
+
+
+@code {
+
+
+    List<TipoProdutoDTO>? lista;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        lista = await Service.Listar();
+
+    }
+
+
+}

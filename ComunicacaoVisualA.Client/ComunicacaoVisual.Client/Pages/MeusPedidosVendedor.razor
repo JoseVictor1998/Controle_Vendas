@@ -1,0 +1,134 @@
+﻿@page "/meus-pedidos"
+
+@using ComunicacaoVisual.Client.Models
+@using ComunicacaoVisual.Client.Services
+
+@inject MeusPedidosVendedorService Service
+
+<h3 style="color:white">Meus Pedidos</h3>
+
+<br />
+
+
+<input placeholder="Buscar OS ou Cliente"
+       @bind="filtro"
+       @bind:event="oninput"
+       class="form-control" />
+
+<br />
+
+
+@if (lista == null)
+{
+
+    <p>Carregando...</p>
+
+}
+else
+{
+
+
+    <table class="table table-dark table-hover">
+
+        <thead>
+
+            <tr>
+
+                <th>Foto</th>
+
+                <th>OS</th>
+
+                <th>Cliente</th>
+
+                <th>Produto</th>
+
+                <th>Dimensão</th>
+
+                <th>Status</th>
+
+                <th>Data</th>
+
+                <th>Valor</th>
+
+            </tr>
+
+        </thead>
+
+        <tbody>
+
+
+            @foreach (var item in lista)
+            {
+
+                <tr>
+
+                    <td>
+
+                        @if (!string.IsNullOrEmpty(item.CaminhoFoto))
+                        {
+
+                            <img src="@item.CaminhoFoto" width="50" />
+
+                        }
+
+                    </td>
+
+
+                    <td>@item.OsExterna</td>
+
+                    <td>@item.Cliente</td>
+
+                    <td>@item.TipoProdutoNome</td>
+
+                    <td>@item.Largura x @item.Altura</td>
+
+                    <td>@item.StatusNome</td>
+
+                    <td>@item.CreatedDate.ToString("dd/MM/yyyy")</td>
+
+                    <td>R$ @item.ValorTotal</td>
+
+
+                </tr>
+
+            }
+
+        </tbody>
+
+    </table>
+
+
+}
+
+
+@code {
+
+
+    List<MeusPedidosVendedorDTO>? lista;
+
+
+    string filtro = "";
+
+
+    int vendedorId = 1;
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        lista = await Service.Listar(vendedorId, filtro);
+
+    }
+
+
+
+    protected override async Task OnParametersSetAsync()
+    {
+
+        lista = await Service.Listar(vendedorId, filtro);
+
+    }
+
+
+}

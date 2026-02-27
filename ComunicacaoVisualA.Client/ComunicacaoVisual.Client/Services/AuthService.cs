@@ -1,13 +1,13 @@
 ﻿using ComunicacaoVisual.Client.Models;
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Authorization; // <--- ADICIONE ESTA LINHA
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.JSInterop;
 using System.Net.Http.Json;
-using System.Security.Claims; // <--- ADICIONE ESTA PARA AS ROLES
+using System.Security.Claims;
 
 namespace ComunicacaoVisual.Client.Services
 {
-    // O segredo está aqui: adicione o ": AuthenticationStateProvider"
+
     public class AuthService : AuthenticationStateProvider
     {
         private readonly HttpClient _http;
@@ -21,32 +21,36 @@ namespace ComunicacaoVisual.Client.Services
             _navigationManager = nav;
         }
 
-        
+
         public override async Task<AuthenticationState> GetAuthenticationStateAsync()
         {
-            var token = await _js.InvokeAsync<string>("localStorage.getItem", "authToken");
-            var nivel = await _js.InvokeAsync<string>("localStorage.getItem", "userLevel");
-
-            if (string.IsNullOrEmpty(token) || TokenExpirou(token))
+            try
             {
-                await _js.InvokeVoidAsync("localStorage.removeItem", "authToken");
 
-                _navigationManager.NavigateTo("/login", true);
+                var token = await _js.InvokeAsync<string>("localStorage.getItem", "authToken");
+                var nivel = await _js.InvokeAsync<string>("localStorage.getItem", "userLevel");
 
-                return new AuthenticationState(
-                    new ClaimsPrincipal(new ClaimsIdentity())
-                );
+
+                if (string.IsNullOrEmpty(token) || TokenExpirou(token))
+                {
+                    return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+                }
+
+
+                var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.Name, await _js.InvokeAsync<string>("localStorage.getItem", "userName") ?? "Usuário"),
+            new Claim(ClaimTypes.Role, nivel ?? "")
+        };
+
+                var identity = new ClaimsIdentity(claims, "jwt");
+                return new AuthenticationState(new ClaimsPrincipal(identity));
             }
+            catch
+            {
 
-            var claims = new List<Claim>
-    {
-        new Claim(ClaimTypes.Name,
-            await _js.InvokeAsync<string>("localStorage.getItem", "userName")),
-        new Claim(ClaimTypes.Role, nivel ?? "")
-    };
-
-            var identity = new ClaimsIdentity(claims, "jwt");
-            return new AuthenticationState(new ClaimsPrincipal(identity));
+                return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+            }
         }
 
         private static bool TokenExpirou(string token)
@@ -86,28 +90,30 @@ namespace ComunicacaoVisual.Client.Services
         {
             var response = await _http.PostAsJsonAsync("api/Auth/login", dadosLogin);
 
-            if (response.IsSuccessStatusCode)
-            {
-                var resultado = await response.Content.ReadFromJsonAsync<LoginResponse>();
+            if (!response.IsSuccessStatusCode)
+                return false;
 
-                if (resultado != null && !string.IsNullOrEmpty(resultado.Token))
-                {
-                    await _js.InvokeVoidAsync("localStorage.setItem", "authToken", resultado.Token);
-                    await _js.InvokeVoidAsync("localStorage.setItem", "userName", resultado.Nome);
-                    await _js.InvokeVoidAsync("localStorage.setItem", "userLevel", resultado.Nivel);
+            var resultado = await response.Content.ReadFromJsonAsync<LoginResponse>();
+            if (resultado == null || string.IsNullOrEmpty(resultado.Token))
+                return false;
 
-                    // Agora esta linha vai funcionar e atualizar o nome no topo!
-                    _navigationManager.NavigateTo("/", true);
-                    return true;
-                }
-            }
-            return false;
+            await _js.InvokeVoidAsync("localStorage.setItem", "authToken", resultado.Token);
+            await _js.InvokeVoidAsync("localStorage.setItem", "userName", resultado.Nome);
+            await _js.InvokeVoidAsync("localStorage.setItem", "userLevel", resultado.Nivel);
+
+
+            NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
+
+            return true;
         }
 
         public async Task Logout()
         {
-            // Remove o "crachá" do navegador
             await _js.InvokeVoidAsync("localStorage.removeItem", "authToken");
+            await _js.InvokeVoidAsync("localStorage.removeItem", "userName");
+            await _js.InvokeVoidAsync("localStorage.removeItem", "userLevel");
+
+            NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
         }
     }
 }
