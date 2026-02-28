@@ -22,6 +22,16 @@
     .row-base { background-color: #1e293b; transition: all 0.2s; border-radius: 8px; }
     .row-base:hover { background-color: #334155; transform: scale(1.005); }
     
+    /* ALERTA DE ATRASO (>= 5 dias) */
+.row-delayed { background-color: rgba(127, 29, 29, 0.3) !important; border-left: 4px solid #ef4444; }
+.text-delayed { color: #f87171; font-weight: bold; animation: pulse 2s infinite; }
+
+   keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
     .material-pill { background-color: #fedf00; color: #0f172a; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 0.8rem; }
 
     /* TOOLTIP INTERATIVO */
@@ -40,12 +50,12 @@
             <h1 style="font-size: 1.5rem; font-weight: 700;">Fila de Produção</h1>
             <p style="color: #94a3b8; font-size: 0.875rem;">Itens aguardando ou em processo de fabricação</p>
         </div>
-        @if (lista?.Count > 0)
-        {
-            <div class="new-orders-badge">
-                <i class="oi oi-timer"></i> @lista.Count Pedidos Ativos
-            </div>
-        }
+        @if (lista?.Count(x => ((x.HorasDesdeAbertura ?? 0) / 24) == 0) > 0)
+{
+    <div class="new-orders-badge">
+        <i class="oi oi-bell"></i> @lista.Count(x => ((x.HorasDesdeAbertura ?? 0) / 24) == 0) Novos Pedidos
+    </div>
+}
     </div>
 
     <table class="custom-table">
@@ -63,6 +73,7 @@
         </thead>
         <tbody>
             @if (lista == null)
+
             {
                 <tr><td colspan="8" class="text-center p-5">Sincronizando banco de dados...</td></tr>
             }
@@ -72,57 +83,70 @@
             }
             else
             {
-                foreach (var item in lista)
-                {
-                    <tr class="row-base">
-                        <td style="width: 80px; padding: 1rem;">
-                            @if (!string.IsNullOrEmpty(item.CaminhoFoto))
-                            {
-                                <img src="@item.CaminhoFoto" 
-                                     style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px; border: 1px solid #334155;" />
-                            }
-                            else
-                            {
-                                <div style="width: 50px; height: 50px; background: #1e293b; display: flex; align-items: center; justify-content: center; border-radius: 8px;">
-                                    <i class="oi oi-image" style="color: #475569;"></i>
-                                </div>
-                            }
-                        </td>
-                        <td style="padding: 1rem; color: #fedf00;">
-                            <i class="oi oi-timer"></i> @(item.HorasDesdeAbertura ?? 0)h
-                        </td>
-                        <td style="font-weight: 700;">@item.Os</td>
-                        <td>
-                            <div class="obs-box">
-                                <span style="font-weight: 600;">@item.Produto</span>
-                                <div class="obs-content">
-                                    <strong style="color: #fedf00;">📋 Obs. Geral:</strong><br/>
-                                    <span>@(item.ObservacaoGeral ?? "-")</span><br/><br/>
-                                    <strong style="color: #f87171;">🛠 Obs. Técnica:</strong><br/>
-                                    <span>@(item.ObservacaoTecnica ?? "-")</span>
-                                </div>
-                            </div><br/>
-                            <small style="color: #94a3b8;">@item.Cliente</small>
-                        </td>
-                        <td>
-                            <span class="material-pill">@(item.MaterialBase ?? "N/A")</span>
-                        </td>
-                        <td>
-                            <span>@item.Largura.ToString("N2") x @item.Altura.ToString("N2")</span><br/>
-                            <small style="color: #94a3b8;">Qtd: @item.Quantidade</small>
-                        </td>
-                        <td>
-                            <span class="badge bg-dark" style="border: 1px solid #334155; color: #f8fafc;">
-                                 @item.VendedorResponsavel
-                             </span>
-                        </td>
-                        <td>
-                            <button class="btn btn-success btn-sm" @onclick="() => Concluir(item.Os)">
-                                <i class="oi oi-check"></i> Concluir
-                            </button>
-                        </td>
-                    </tr>
-                }
+                @foreach (var item in lista)
+{
+    var horas = item.HorasDesdeAbertura ?? 0;
+    var dias = (int)Math.Floor(horas / 24.0);
+    bool atrasado = dias >= 5; // ficou vermelho quando passar de 5 dias (>= 120h)
+
+    <tr class="row-base @(atrasado ? "row-delayed" : "")">
+        <td style="width: 80px; padding: 1rem;">
+            @if (!string.IsNullOrEmpty(item.CaminhoFoto))
+            {
+                <img src="@item.CaminhoFoto"
+                     style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px; border: 1px solid #334155;" />
+            }
+            else
+            {
+                <div style="width: 50px; height: 50px; background: #1e293b; display: flex; align-items: center; justify-content: center; border-radius: 8px;">
+                    <i class="oi oi-image" style="color: #475569;"></i>
+                </div>
+            }
+        </td>
+
+        <td style="padding: 1rem;">
+            <div class="flex items-center gap-2 @(atrasado ? "text-delayed" : "")" style="color: #fedf00;">
+                <i class="oi oi-timer"></i>
+                @(dias == 0 ? "Novo" : $"{dias}d")
+                <small style="color: #94a3b8; margin-left: 6px;">({horas}h)</small>
+            </div>
+        </td>
+
+        <td style="font-weight: 700;">@item.Os</td>
+
+        <td>
+            <div class="obs-box">
+                <span style="font-weight: 600;">@item.Produto</span>
+                <div class="obs-content">
+                    <strong style="color: #fedf00;">📋 Obs. Geral:</strong><br/>
+                    <span>@(item.ObservacaoGeral ?? "-")</span><br/><br/>
+                    <strong style="color: #f87171;">🛠 Obs. Técnica:</strong><br/>
+                    <span>@(item.ObservacaoTecnica ?? "-")</span>
+                </div>
+            </div><br/>
+            <small style="color: #94a3b8;">@item.Cliente</small>
+        </td>
+
+        <td><span class="material-pill">@(item.MaterialBase ?? "N/A")</span></td>
+
+        <td>
+            <span>@item.Largura.ToString("N2") x @item.Altura.ToString("N2")</span><br/>
+            <small style="color: #94a3b8;">Qtd: @item.Quantidade</small>
+        </td>
+
+        <td>
+            <span class="badge bg-dark" style="border: 1px solid #334155; color: #f8fafc;">
+                @item.VendedorResponsavel
+            </span>
+        </td>
+
+        <td>
+            <button class="btn btn-success btn-sm" @onclick="() => Concluir(item.Os)">
+                <i class="oi oi-check"></i> Concluir
+            </button>
+        </td>
+    </tr>
+}
             }
         </tbody>
     </table>

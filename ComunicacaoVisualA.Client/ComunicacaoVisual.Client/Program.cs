@@ -11,6 +11,7 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 builder.Services.AddScoped<PedidoService>();
 // Adicione esta linha no seu Program.cs
 builder.Services.AddScoped<FilaProducaoService>();
+builder.Services.AddScoped<ClienteService>();
 // HttpClient apontando para sua API
 // registra o handler
 builder.Services.AddScoped<AuthMessageHandler>();

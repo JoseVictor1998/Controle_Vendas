@@ -560,6 +560,32 @@ JOIN UltimoStatus U ON P.Pedido_ID = U.Pedido_ID AND U.rn = 1
 LEFT JOIN DataAprovacao DA ON P.Pedido_ID = DA.Pedido_ID;
 GO
 
+CREATE OR ALTER PROCEDURE SP_Validar_Login
+    @Login NVARCHAR(50),
+    @Senha NVARCHAR(255)
+AS
+BEGIN
+    SET NOCOUNT ON; -- Melhora a performance ao não retornar mensagens de "linhas afetadas"
+
+    -- Verifica se existe o par Login/Senha no banco
+    IF EXISTS (SELECT 1 FROM Usuario WHERE Login = @Login AND Senha = @Senha)
+    BEGIN
+        -- Se estiver tudo certo, o banco "entrega" os dados do funcionário para o sistema
+        SELECT 
+            Usuario_ID, 
+            Nome, 
+            Funcao 
+        FROM Usuario 
+        WHERE Login = @Login AND Senha = @Senha;
+    END
+    ELSE
+    BEGIN
+        -- Se o login ou a senha estiverem errados, o banco gera um erro para avisar a tela
+        RAISERROR('Usuário ou Senha inválidos. Tente novamente.', 16, 1);
+    END
+END
+GO
+
 CREATE OR ALTER PROCEDURE SP_Cadastrar_Cliente_Completo
     @Nome NVARCHAR(50),
     @Email NVARCHAR(100),

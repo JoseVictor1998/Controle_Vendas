@@ -1,106 +1,157 @@
 ﻿@page "/clientes"
-
+@using Microsoft.AspNetCore.Authorization
 @using ComunicacaoVisual.Client.Models
 @using ComunicacaoVisual.Client.Services
+@attribute [Authorize(Roles = "God,Admin,Vendedor")]
 
-@inject ClienteService ClienteService
+@inject ClienteService Service
+@inject IJSRuntime JS
 
+<style>
+    .page-container { background-color: #0f172a; min-height: 100vh; padding: 2rem; color: #f8fafc; }
+    .header-section { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+    .card { background:#1e293b; border:1px solid #334155; border-radius: 12px; padding: 1.25rem; }
+    .label { color:#cbd5e1; font-size: .75rem; margin-bottom: .25rem; display:block; }
+    .input { width:100%; background:#0f172a; border:1px solid #475569; color:#fff; border-radius: 8px; padding:.6rem .75rem; }
+    .input:focus { outline:none; border-color:#fedf00; box-shadow: 0 0 0 3px rgba(254,223,0,.15); }
+    .grid { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: .75rem; }
+    .col-2 { grid-column: span 2; }
+    .btn { border-radius: 10px; padding:.7rem 1rem; font-weight:700; border:1px solid transparent; cursor:pointer; }
+    .btn-yellow { background:#fedf00; color:#0f172a; }
+    .btn-green { background:#009b3a; color:#fff; }
+    .btn:disabled { opacity:.6; cursor:not-allowed; }
+    .msg-ok { background: rgba(16,185,129,.15); border: 1px solid rgba(16,185,129,.35); color:#a7f3d0; padding:.75rem; border-radius:10px; }
+    .msg-err { background: rgba(239,68,68,.12); border: 1px solid rgba(239,68,68,.35); color:#fecaca; padding:.75rem; border-radius:10px; }
+</style>
 
-<h3>Cadastro Cliente</h3>
+<div class="page-container">
+    <div class="header-section">
+        <div>
+            <h1 style="font-size: 1.5rem; font-weight: 700;">Novo Cliente</h1>
+            <p style="color: #94a3b8; font-size: 0.875rem;">Cadastro de cliente (PF/PJ) no padrão Base44</p>
+        </div>
+    </div>
 
+    <div class="card">
+        @if (!string.IsNullOrWhiteSpace(msgOk))
+        {
+            <div class="msg-ok">@msgOk</div>
+            <div style="height: .75rem;"></div>
+        }
+        @if (!string.IsNullOrWhiteSpace(msgErro))
+        {
+            <div class="msg-err">@msgErro</div>
+            <div style="height: .75rem;"></div>
+        }
 
-<input placeholder="Nome"
-       @bind="cliente.Nome" />
+        <EditForm Model="model" OnValidSubmit="Salvar">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
 
+            <div class="grid">
+                <div class="col-2">
+                    <label class="label">Nome</label>
+                    <InputText class="input" @bind-Value="model.Nome" />
+                </div>
 
-<input placeholder="Documento"
-       @bind="cliente.Documento" />
+                <div>
+                    <label class="label">Tipo</label>
+                    <InputSelect class="input" @bind-Value="model.Tipo">
+                        <option value="PF">Pessoa Física</option>
+                        <option value="PJ">Pessoa Jurídica</option>
+                    </InputSelect>
+                </div>
 
+                <div>
+                    <label class="label">@((model.Tipo == "PJ") ? "CNPJ" : "CPF")</label>
+                    <InputText class="input" @bind-Value="model.Documento" />
+                </div>
 
-<input placeholder="Email"
-       @bind="cliente.Email" />
+                <div class="col-2">
+                    <label class="label">Email</label>
+                    <InputText class="input" type="email" @bind-Value="model.Email" />
+                </div>
 
+                <div>
+                    <label class="label">DDD</label>
+                    <InputText class="input" maxlength="3" @bind-Value="model.DDD" />
+                </div>
 
-<input placeholder="DDD"
-       @bind="cliente.DDD" />
+                <div>
+                    <label class="label">Telefone</label>
+                    <InputText class="input" @bind-Value="model.NumeroTelefone" />
+                </div>
 
+                <div>
+                    <label class="label">Cidade</label>
+                    <InputText class="input" @bind-Value="model.Cidade" />
+                </div>
 
-<input placeholder="Telefone"
-       @bind="cliente.NumeroTelefone" />
+                <div>
+                    <label class="label">CEP</label>
+                    <InputText class="input" @bind-Value="model.CEP" />
+                </div>
 
+                <div class="col-2">
+                    <label class="label">Bairro</label>
+                    <InputText class="input" @bind-Value="model.Bairro" />
+                </div>
 
-<input placeholder="Cidade"
-       @bind="cliente.Cidade" />
+                <div>
+                    <label class="label">Rua</label>
+                    <InputText class="input" @bind-Value="model.Rua" />
+                </div>
 
+                <div>
+                    <label class="label">Número</label>
+                    <InputText class="input" @bind-Value="model.NumeroEndereco" />
+                </div>
+            </div>
 
-<input placeholder="CEP"
-       @bind="cliente.CEP" />
+            <div style="height: 1rem;"></div>
 
-
-<input placeholder="Bairro"
-       @bind="cliente.Bairro" />
-
-
-<input placeholder="Rua"
-       @bind="cliente.Rua" />
-
-
-<input type="number"
-       placeholder="Número"
-       @bind="cliente.NumeroEndereco" />
-
-
-<select @bind="cliente.Tipo">
-
-    <option value="PF">Pessoa Física</option>
-
-    <option value="PJ">Pessoa Jurídica</option>
-
-</select>
-
-
-<br />
-
-<button @onclick="Salvar">
-
-    Cadastrar Cliente
-
-</button>
-
-
-<p>@mensagem</p>
-
+            <button class="btn btn-green" disabled="@salvando" type="submit" style="width:100%;">
+                @(salvando ? "Cadastrando..." : "Cadastrar Cliente")
+            </button>
+        </EditForm>
+    </div>
+</div>
 
 @code {
+    private CadastrarClienteCompletoInput model = new();
+    private bool salvando;
+    private string? msgOk;
+    private string? msgErro;
 
-
-    CadastrarClienteDTO cliente = new();
-
-    string mensagem = "";
-
-
-    async Task Salvar()
+    private async Task Salvar()
     {
+        msgOk = null;
+        msgErro = null;
 
-        var sucesso = await ClienteService
-        .CadastrarCliente(cliente);
+        // limpeza simples (evita CPF/CNPJ com máscara)
+        model.Documento = ApenasNumeros(model.Documento);
+        model.CEP = ApenasNumeros(model.CEP);
+        model.DDD = ApenasNumeros(model.DDD);
+        model.NumeroTelefone = ApenasNumeros(model.NumeroTelefone);
 
+        salvando = true;
 
-        if (sucesso)
+        var (ok, mensagem) = await Service.CadastrarCliente(model);
+
+        salvando = false;
+
+        if (ok)
         {
-
-            mensagem = "Cliente cadastrado com sucesso";
-
-            cliente = new();
-
+            msgOk = "Cliente cadastrado com sucesso!";
+            model = new CadastrarClienteCompletoInput(); // limpa form
         }
         else
         {
-
-            mensagem = "Erro ao cadastrar";
-
+            msgErro = mensagem;
+            await JS.InvokeVoidAsync("console.log", mensagem);
         }
-
     }
 
+    private static string ApenasNumeros(string? s)
+        => string.IsNullOrWhiteSpace(s) ? string.Empty : new string(s.Where(char.IsDigit).ToArray());
 }
