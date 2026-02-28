@@ -1,5 +1,7 @@
 ﻿@inherits LayoutComponentBase
 
+<AuthRefresh />
+
 <style>
     /* Força o fundo escuro em toda a área de conteúdo */
     .page {
@@ -18,13 +20,14 @@
         color: white !important;
     }
 </style>
+
 <div class="page">
     <div class="sidebar">
         <NavMenu />
     </div>
 
     <main>
-        <UserNav /> 
+        <UserNav />
 
         <article class="content px-4">
             @Body

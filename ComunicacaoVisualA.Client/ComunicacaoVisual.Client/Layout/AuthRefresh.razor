@@ -1,0 +1,15 @@
+﻿@inject ComunicacaoVisual.Client.Services.AuthService AuthService
+
+@code {
+    private bool _done;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_done)
+        {
+            _done = true;
+            await Task.Delay(150);
+            AuthService.ForceRefresh();
+        }
+    }
+}

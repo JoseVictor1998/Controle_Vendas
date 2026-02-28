@@ -86,6 +86,11 @@ namespace ComunicacaoVisual.Client.Services
             }
         }
 
+        public void ForceRefresh()
+        {
+            NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
+        }
+
         public async Task<bool> Login(object dadosLogin)
         {
             var response = await _http.PostAsJsonAsync("api/Auth/login", dadosLogin);
