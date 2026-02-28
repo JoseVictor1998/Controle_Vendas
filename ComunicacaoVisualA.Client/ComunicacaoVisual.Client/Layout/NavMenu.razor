@@ -15,12 +15,20 @@
         @* SETOR DE VENDAS: Só God, Admin e Vendedor *@
         <AuthorizeView Roles="God,Admin,Vendedor">
             <div class="nav-item px-3">
+                <NavLink class="nav-link" href="novo-pedido">
+                    <span class="oi oi-plus" aria-hidden="true"></span> Novo Pedido
+                </NavLink>
+            </div>
+        </AuthorizeView>
+
+        @* SETOR DE VENDAS: Só God, Admin e Vendedor *@
+        <AuthorizeView Roles="God,Admin,Vendedor">
+            <div class="nav-item px-3">
                 <NavLink class="nav-link" href="clientes">
                     <span class="oi oi-plus" aria-hidden="true"></span> Novo Cliente
                 </NavLink>
             </div>
         </AuthorizeView>
-
 
         @* SETOR DE CRIAÇÃO: Só God, Admin e Arte *@
         <AuthorizeView Roles="God,Admin,Arte">
