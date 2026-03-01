@@ -1,229 +1,6 @@
-USE [Controle_Vendas]
-GO
-/****** Object:  Trigger [TR_Validar_Dimensoes_Item]    Script Date: 28/02/2026 01:15:45 ******/
-DROP TRIGGER [dbo].[TR_Validar_Dimensoes_Item]
-GO
-/****** Object:  Trigger [TR_Proibir_Delete_Pedido]    Script Date: 28/02/2026 01:15:45 ******/
-DROP TRIGGER [dbo].[TR_Proibir_Delete_Pedido]
-GO
-/****** Object:  Trigger [TR_Historico_Status_Insert]    Script Date: 28/02/2026 01:15:45 ******/
-DROP TRIGGER [dbo].[TR_Historico_Status_Insert]
-GO
-/****** Object:  Trigger [TR_Gerar_Historico_Status]    Script Date: 28/02/2026 01:15:45 ******/
-DROP TRIGGER [dbo].[TR_Gerar_Historico_Status]
-GO
-/****** Object:  Trigger [TR_StatusArte_RefleteNoPedido]    Script Date: 28/02/2026 01:15:45 ******/
-DROP TRIGGER [dbo].[TR_StatusArte_RefleteNoPedido]
-GO
-/****** Object:  Trigger [TR_ArteReprovada_ArquivaPedido]    Script Date: 28/02/2026 01:15:45 ******/
-DROP TRIGGER [dbo].[TR_ArteReprovada_ArquivaPedido]
-GO
-/****** Object:  StoredProcedure [dbo].[SP_Vincular_Arquivo_Arte]    Script Date: 28/02/2026 01:15:45 ******/
-DROP PROCEDURE [dbo].[SP_Vincular_Arquivo_Arte]
-GO
-/****** Object:  StoredProcedure [dbo].[SP_Validar_Login]    Script Date: 28/02/2026 01:15:45 ******/
-DROP PROCEDURE [dbo].[SP_Validar_Login]
-GO
-/****** Object:  StoredProcedure [dbo].[SP_Criar_Pedido_Com_Item]    Script Date: 28/02/2026 01:15:45 ******/
-DROP PROCEDURE [dbo].[SP_Criar_Pedido_Com_Item]
-GO
-/****** Object:  StoredProcedure [dbo].[SP_Cadastrar_Tipo_Produto_Completo]    Script Date: 28/02/2026 01:15:45 ******/
-DROP PROCEDURE [dbo].[SP_Cadastrar_Tipo_Produto_Completo]
-GO
-/****** Object:  StoredProcedure [dbo].[SP_Cadastrar_Cliente_Completo]    Script Date: 28/02/2026 01:15:45 ******/
-DROP PROCEDURE [dbo].[SP_Cadastrar_Cliente_Completo]
-GO
-/****** Object:  StoredProcedure [dbo].[SP_Atualizar_Status_Pedido]    Script Date: 28/02/2026 01:15:45 ******/
-DROP PROCEDURE [dbo].[SP_Atualizar_Status_Pedido]
-GO
-/****** Object:  StoredProcedure [dbo].[SP_Atualizar_Status_Arte]    Script Date: 28/02/2026 01:15:45 ******/
-DROP PROCEDURE [dbo].[SP_Atualizar_Status_Arte]
-GO
-ALTER TABLE [dbo].[Clientes] DROP CONSTRAINT [CK_PJ_PF]
-GO
-ALTER TABLE [dbo].[Tipo_Produto_Material] DROP CONSTRAINT [FK_TPM_Tipo_Produto]
-GO
-ALTER TABLE [dbo].[Tipo_Produto_Material] DROP CONSTRAINT [FK_TPM_Material]
-GO
-ALTER TABLE [dbo].[Tipo_Produto] DROP CONSTRAINT [FK_Tipo_Produto_Categoria_ID]
-GO
-ALTER TABLE [dbo].[Pedido_Item] DROP CONSTRAINT [FK_Pedido_Item_Tipo_Produto_ID]
-GO
-ALTER TABLE [dbo].[Pedido_Item] DROP CONSTRAINT [FK_Pedido_Item_Pedido_ID]
-GO
-ALTER TABLE [dbo].[Pedido] DROP CONSTRAINT [FK_Pedido_Vendedor]
-GO
-ALTER TABLE [dbo].[Pedido] DROP CONSTRAINT [FK_Pedido_Status_ID]
-GO
-ALTER TABLE [dbo].[Pedido] DROP CONSTRAINT [FK_Pedido_Cliente_ID]
-GO
-ALTER TABLE [dbo].[Historico_Status] DROP CONSTRAINT [FK_Historico_StatusT_Usuario_ID]
-GO
-ALTER TABLE [dbo].[Historico_Status] DROP CONSTRAINT [FK_Historico_Status_Status_ID]
-GO
-ALTER TABLE [dbo].[Historico_Status] DROP CONSTRAINT [FK_Historico_Status_Pedido_ID]
-GO
-ALTER TABLE [dbo].[Clientes] DROP CONSTRAINT [FK_Cliente_Telefone]
-GO
-ALTER TABLE [dbo].[Clientes] DROP CONSTRAINT [FK_Cliente_PJ]
-GO
-ALTER TABLE [dbo].[Clientes] DROP CONSTRAINT [FK_Cliente_PF]
-GO
-ALTER TABLE [dbo].[Clientes] DROP CONSTRAINT [FK_Cliente_Endereco]
-GO
-ALTER TABLE [dbo].[Arquivo_Arte] DROP CONSTRAINT [FK_Arquivo_Arte_Status_Arte_ID]
-GO
-ALTER TABLE [dbo].[Arquivo_Arte] DROP CONSTRAINT [FK_Arquivo_Arte_Item_ID]
-GO
-ALTER TABLE [dbo].[Usuario] DROP CONSTRAINT [DF__Usuario__Nivel_A__4BAC3F29]
-GO
-ALTER TABLE [dbo].[Tipo_Produto] DROP CONSTRAINT [DF__Tipo_Prod__Ativo__5165187F]
-GO
-ALTER TABLE [dbo].[Status_Producao] DROP CONSTRAINT [DF__Status_Pr__Ativo__5535A963]
-GO
-ALTER TABLE [dbo].[Pedido] DROP CONSTRAINT [DF__Pedido__Valor_To__59FA5E80]
-GO
-ALTER TABLE [dbo].[Pedido] DROP CONSTRAINT [DF__Pedido__Data_Ped__59063A47]
-GO
-ALTER TABLE [dbo].[Material] DROP CONSTRAINT [DF__Material__Ativo__6EF57B66]
-GO
-ALTER TABLE [dbo].[Historico_Status] DROP CONSTRAINT [DF__Historico__Data___693CA210]
-GO
-ALTER TABLE [dbo].[Custos_Fixos] DROP CONSTRAINT [DF__Custos_Fi__Statu__75A278F5]
-GO
-ALTER TABLE [dbo].[Clientes] DROP CONSTRAINT [DF__Clientes__Ativo__4316F928]
-GO
-ALTER TABLE [dbo].[Cliente_PJ] DROP CONSTRAINT [DF__Cliente_P__Data___38996AB5]
-GO
-ALTER TABLE [dbo].[Cliente_PF] DROP CONSTRAINT [DF__Cliente_P__Data___3C69FB99]
-GO
-ALTER TABLE [dbo].[Categoria_Produtos] DROP CONSTRAINT [DF__Categoria__Ativo__4E88ABD4]
-GO
-/****** Object:  Index [UQ__Usuario__5E55825BEAAA9BFA]    Script Date: 28/02/2026 01:15:45 ******/
-ALTER TABLE [dbo].[Usuario] DROP CONSTRAINT [UQ__Usuario__5E55825BEAAA9BFA]
-GO
-/****** Object:  Index [UQ__Pedido__3FEC44085A5D2F43]    Script Date: 28/02/2026 01:15:45 ******/
-ALTER TABLE [dbo].[Pedido] DROP CONSTRAINT [UQ__Pedido__3FEC44085A5D2F43]
-GO
-/****** Object:  Index [UQ__Cliente___AA57D6B4F6A8D13D]    Script Date: 28/02/2026 01:15:45 ******/
-ALTER TABLE [dbo].[Cliente_PJ] DROP CONSTRAINT [UQ__Cliente___AA57D6B4F6A8D13D]
-GO
-/****** Object:  Index [UQ__Cliente___C1F897319EEFD529]    Script Date: 28/02/2026 01:15:45 ******/
-ALTER TABLE [dbo].[Cliente_PF] DROP CONSTRAINT [UQ__Cliente___C1F897319EEFD529]
-GO
-/****** Object:  Table [dbo].[Categoria_Produtos]    Script Date: 28/02/2026 01:15:45 ******/
-IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Categoria_Produtos]') AND type in (N'U'))
-DROP TABLE [dbo].[Categoria_Produtos]
-GO
-/****** Object:  View [dbo].[VW_Busca_Rapida_Pedido]    Script Date: 28/02/2026 01:15:45 ******/
-DROP VIEW [dbo].[VW_Busca_Rapida_Pedido]
-GO
-/****** Object:  View [dbo].[VW_Historico_Pedidos_Cliente]    Script Date: 28/02/2026 01:15:45 ******/
-DROP VIEW [dbo].[VW_Historico_Pedidos_Cliente]
-GO
-/****** Object:  View [dbo].[VW_Pesquisa_Clientes_Vendas]    Script Date: 28/02/2026 01:15:45 ******/
-DROP VIEW [dbo].[VW_Pesquisa_Clientes_Vendas]
-GO
-/****** Object:  Table [dbo].[Telefone]    Script Date: 28/02/2026 01:15:45 ******/
-IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Telefone]') AND type in (N'U'))
-DROP TABLE [dbo].[Telefone]
-GO
-/****** Object:  Table [dbo].[Endereco]    Script Date: 28/02/2026 01:15:45 ******/
-IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Endereco]') AND type in (N'U'))
-DROP TABLE [dbo].[Endereco]
-GO
-/****** Object:  Table [dbo].[Cliente_PF]    Script Date: 28/02/2026 01:15:45 ******/
-IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Cliente_PF]') AND type in (N'U'))
-DROP TABLE [dbo].[Cliente_PF]
-GO
-/****** Object:  Table [dbo].[Cliente_PJ]    Script Date: 28/02/2026 01:15:45 ******/
-IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Cliente_PJ]') AND type in (N'U'))
-DROP TABLE [dbo].[Cliente_PJ]
-GO
-/****** Object:  View [dbo].[VW_Meus_Pedidos_Vendedor]    Script Date: 28/02/2026 01:15:45 ******/
-DROP VIEW [dbo].[VW_Meus_Pedidos_Vendedor]
-GO
-/****** Object:  View [dbo].[VW_Dashboard_Gestao_Ativa]    Script Date: 28/02/2026 01:15:45 ******/
-DROP VIEW [dbo].[VW_Dashboard_Gestao_Ativa]
-GO
-/****** Object:  View [dbo].[VW_Fila_Producao_Completa]    Script Date: 28/02/2026 01:15:45 ******/
-DROP VIEW [dbo].[VW_Fila_Producao_Completa]
-GO
-/****** Object:  Table [dbo].[Usuario]    Script Date: 28/02/2026 01:15:45 ******/
-IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Usuario]') AND type in (N'U'))
-DROP TABLE [dbo].[Usuario]
-GO
-/****** Object:  View [dbo].[VW_Monitoramento_Global]    Script Date: 28/02/2026 01:15:45 ******/
-DROP VIEW [dbo].[VW_Monitoramento_Global]
-GO
-/****** Object:  View [dbo].[VW_Fila_Impressao]    Script Date: 28/02/2026 01:15:45 ******/
-DROP VIEW [dbo].[VW_Fila_Impressao]
-GO
-/****** Object:  Table [dbo].[Tipo_Produto_Material]    Script Date: 28/02/2026 01:15:45 ******/
-IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Tipo_Produto_Material]') AND type in (N'U'))
-DROP TABLE [dbo].[Tipo_Produto_Material]
-GO
-/****** Object:  Table [dbo].[Material]    Script Date: 28/02/2026 01:15:45 ******/
-IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Material]') AND type in (N'U'))
-DROP TABLE [dbo].[Material]
-GO
-/****** Object:  View [dbo].[VW_Fila_Arte_Finalista_Full]    Script Date: 28/02/2026 01:15:45 ******/
-DROP VIEW [dbo].[VW_Fila_Arte_Finalista_Full]
-GO
-/****** Object:  View [dbo].[VW_Fila_Arte]    Script Date: 28/02/2026 01:15:45 ******/
-DROP VIEW [dbo].[VW_Fila_Arte]
-GO
-/****** Object:  Table [dbo].[Arquivo_Arte]    Script Date: 28/02/2026 01:15:45 ******/
-IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Arquivo_Arte]') AND type in (N'U'))
-DROP TABLE [dbo].[Arquivo_Arte]
-GO
-/****** Object:  Table [dbo].[Status_Arte]    Script Date: 28/02/2026 01:15:45 ******/
-IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Status_Arte]') AND type in (N'U'))
-DROP TABLE [dbo].[Status_Arte]
-GO
-/****** Object:  Table [dbo].[Pedido_Item]    Script Date: 28/02/2026 01:15:45 ******/
-IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Pedido_Item]') AND type in (N'U'))
-DROP TABLE [dbo].[Pedido_Item]
-GO
-/****** Object:  Table [dbo].[Tipo_Produto]    Script Date: 28/02/2026 01:15:45 ******/
-IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Tipo_Produto]') AND type in (N'U'))
-DROP TABLE [dbo].[Tipo_Produto]
-GO
-/****** Object:  View [dbo].[VW_Alertas_SLA]    Script Date: 28/02/2026 01:15:45 ******/
-DROP VIEW [dbo].[VW_Alertas_SLA]
-GO
-/****** Object:  Table [dbo].[Historico_Status]    Script Date: 28/02/2026 01:15:45 ******/
-IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Historico_Status]') AND type in (N'U'))
-DROP TABLE [dbo].[Historico_Status]
-GO
-/****** Object:  View [dbo].[VW_Dashboard_BI_Gerencial]    Script Date: 28/02/2026 01:15:45 ******/
-DROP VIEW [dbo].[VW_Dashboard_BI_Gerencial]
-GO
-/****** Object:  Table [dbo].[Custos_Fixos]    Script Date: 28/02/2026 01:15:45 ******/
-IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Custos_Fixos]') AND type in (N'U'))
-DROP TABLE [dbo].[Custos_Fixos]
-GO
-/****** Object:  View [dbo].[VW_Dashboard_Financeiro]    Script Date: 28/02/2026 01:15:45 ******/
-DROP VIEW [dbo].[VW_Dashboard_Financeiro]
-GO
-/****** Object:  Table [dbo].[Pedido]    Script Date: 28/02/2026 01:15:45 ******/
-IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Pedido]') AND type in (N'U'))
-DROP TABLE [dbo].[Pedido]
-GO
-/****** Object:  Table [dbo].[Status_Producao]    Script Date: 28/02/2026 01:15:45 ******/
-IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Status_Producao]') AND type in (N'U'))
-DROP TABLE [dbo].[Status_Producao]
-GO
-/****** Object:  Table [dbo].[Clientes]    Script Date: 28/02/2026 01:15:45 ******/
-IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Clientes]') AND type in (N'U'))
-DROP TABLE [dbo].[Clientes]
-GO
 USE [master]
 GO
-/****** Object:  Database [Controle_Vendas]    Script Date: 28/02/2026 01:15:45 ******/
-DROP DATABASE [Controle_Vendas]
-GO
-/****** Object:  Database [Controle_Vendas]    Script Date: 28/02/2026 01:15:45 ******/
+/****** Object:  Database [Controle_Vendas]    Script Date: 01/03/2026 17:37:18 ******/
 CREATE DATABASE [Controle_Vendas]
  CONTAINMENT = NONE
  ON  PRIMARY 
@@ -307,7 +84,7 @@ ALTER DATABASE [Controle_Vendas] SET QUERY_STORE (OPERATION_MODE = READ_WRITE, C
 GO
 USE [Controle_Vendas]
 GO
-/****** Object:  Table [dbo].[Clientes]    Script Date: 28/02/2026 01:15:46 ******/
+/****** Object:  Table [dbo].[Clientes]    Script Date: 01/03/2026 17:37:19 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -327,7 +104,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[Status_Producao]    Script Date: 28/02/2026 01:15:46 ******/
+/****** Object:  Table [dbo].[Status_Producao]    Script Date: 01/03/2026 17:37:19 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -343,7 +120,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[Pedido]    Script Date: 28/02/2026 01:15:46 ******/
+/****** Object:  Table [dbo].[Pedido]    Script Date: 01/03/2026 17:37:19 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -364,7 +141,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  View [dbo].[VW_Dashboard_Financeiro]    Script Date: 28/02/2026 01:15:46 ******/
+/****** Object:  View [dbo].[VW_Dashboard_Financeiro]    Script Date: 01/03/2026 17:37:19 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -382,7 +159,7 @@ JOIN Clientes C ON P.Cliente_ID = C.Cliente_id
 JOIN Status_Producao SP ON P.Status_ID = SP.Status_ID;
 
 GO
-/****** Object:  Table [dbo].[Custos_Fixos]    Script Date: 28/02/2026 01:15:46 ******/
+/****** Object:  Table [dbo].[Custos_Fixos]    Script Date: 01/03/2026 17:37:19 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -399,7 +176,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  View [dbo].[VW_Dashboard_BI_Gerencial]    Script Date: 28/02/2026 01:15:46 ******/
+/****** Object:  View [dbo].[VW_Dashboard_BI_Gerencial]    Script Date: 01/03/2026 17:37:19 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -414,7 +191,7 @@ SELECT
      (SELECT ISNULL(SUM(Valor), 0) FROM Custos_Fixos WHERE MONTH(Data_Vencimento) = MONTH(GETDATE()))) AS Lucro_Estimado;
 
 GO
-/****** Object:  Table [dbo].[Historico_Status]    Script Date: 28/02/2026 01:15:46 ******/
+/****** Object:  Table [dbo].[Historico_Status]    Script Date: 01/03/2026 17:37:19 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -431,7 +208,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  View [dbo].[VW_Alertas_SLA]    Script Date: 28/02/2026 01:15:46 ******/
+/****** Object:  View [dbo].[VW_Alertas_SLA]    Script Date: 01/03/2026 17:37:19 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -476,7 +253,7 @@ JOIN UltimoStatus U ON P.Pedido_ID = U.Pedido_ID AND U.rn = 1
 LEFT JOIN DataAprovacao DA ON P.Pedido_ID = DA.Pedido_ID;
 
 GO
-/****** Object:  Table [dbo].[Tipo_Produto]    Script Date: 28/02/2026 01:15:46 ******/
+/****** Object:  Table [dbo].[Tipo_Produto]    Script Date: 01/03/2026 17:37:19 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -495,7 +272,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[Pedido_Item]    Script Date: 28/02/2026 01:15:46 ******/
+/****** Object:  Table [dbo].[Pedido_Item]    Script Date: 01/03/2026 17:37:19 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -515,7 +292,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[Status_Arte]    Script Date: 28/02/2026 01:15:46 ******/
+/****** Object:  Table [dbo].[Status_Arte]    Script Date: 01/03/2026 17:37:19 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -529,7 +306,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[Arquivo_Arte]    Script Date: 28/02/2026 01:15:46 ******/
+/****** Object:  Table [dbo].[Arquivo_Arte]    Script Date: 01/03/2026 17:37:19 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -538,23 +315,28 @@ CREATE TABLE [dbo].[Arquivo_Arte](
 	[Arquivo_ID] [int] IDENTITY(1,1) NOT NULL,
 	[Item_ID] [int] NOT NULL,
 	[Nome_Arquivo] [nvarchar](100) NOT NULL,
-	[Caminho_Arquivo] [nvarchar](255) NOT NULL,
+	[Caminho_Arquivo] [nvarchar](500) NOT NULL,
 	[Status_Arte_ID] [int] NOT NULL,
+	[Caminho_Fisico] [nvarchar](500) NULL,
+	[ContentType] [nvarchar](100) NULL,
+	[TamanhoBytes] [bigint] NULL,
+	[DataUpload] [datetime2](7) NOT NULL,
+	[UsuarioUpload] [nvarchar](100) NULL,
 PRIMARY KEY CLUSTERED 
 (
 	[Arquivo_ID] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  View [dbo].[VW_Fila_Arte]    Script Date: 28/02/2026 01:15:46 ******/
+/****** Object:  View [dbo].[VW_Fila_Arte]    Script Date: 01/03/2026 17:37:19 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-
--- 4. CRIAÇÃO DAS VIEWS (GENTE QUE PRODUZ)
 CREATE   VIEW [dbo].[VW_Fila_Arte] AS 
 SELECT 
+    PI.Item_ID, -- 👈 OBRIGATÓRIO: Sem isso, o Blazor envia ID 0
+    AA.Arquivo_ID, -- 👈 OBRIGATÓRIO: Para o botão "Baixar" funcionar
     P.Os_Externa AS OS, 
     C.Nome AS Cliente, 
     TP.Nome AS Produto,
@@ -567,12 +349,12 @@ FROM Pedido P
 JOIN Clientes C ON P.Cliente_ID = C.Cliente_id
 JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID
 JOIN Tipo_Produto TP ON PI.Tipo_Produto_ID = TP.Tipo_Produto_ID 
-LEFT JOIN Arquivo_Arte AA ON PI.Item_ID = AA.Item_ID -- LEFT JOIN não "esconde" o pedido
+LEFT JOIN Arquivo_Arte AA ON PI.Item_ID = AA.Item_ID 
 LEFT JOIN Status_Arte SA ON AA.Status_Arte_ID = SA.Status_Arte_ID
 WHERE P.Status_ID IN (1, 2, 3); 
 
 GO
-/****** Object:  View [dbo].[VW_Fila_Arte_Finalista_Full]    Script Date: 28/02/2026 01:15:46 ******/
+/****** Object:  View [dbo].[VW_Fila_Arte_Finalista_Full]    Script Date: 01/03/2026 17:37:19 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -602,7 +384,7 @@ LEFT JOIN Arquivo_Arte AA ON PI.Item_ID = AA.Item_ID
 LEFT JOIN Status_Arte SA ON AA.Status_Arte_ID = SA.Status_Arte_ID;
 
 GO
-/****** Object:  Table [dbo].[Material]    Script Date: 28/02/2026 01:15:46 ******/
+/****** Object:  Table [dbo].[Material]    Script Date: 01/03/2026 17:37:19 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -618,7 +400,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[Tipo_Produto_Material]    Script Date: 28/02/2026 01:15:46 ******/
+/****** Object:  Table [dbo].[Tipo_Produto_Material]    Script Date: 01/03/2026 17:37:19 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -633,23 +415,26 @@ CREATE TABLE [dbo].[Tipo_Produto_Material](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  View [dbo].[VW_Fila_Impressao]    Script Date: 28/02/2026 01:15:46 ******/
+/****** Object:  View [dbo].[VW_Fila_Impressao]    Script Date: 01/03/2026 17:37:19 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
 CREATE   VIEW [dbo].[VW_Fila_Impressao] AS 
 SELECT 
+    PI.Item_ID,
+    AA.Arquivo_ID,
     P.OS_Externa AS OS,
     C.Nome AS Cliente,
     TP.Nome AS Produto,
     DATEDIFF(day, P.Data_Pedido, GETDATE()) AS Dias_em_Impressao,
-    (SELECT STRING_AGG(M.Nome, ' / ') FROM 
-    Tipo_Produto_Material TPM 
-    JOIN Material M  ON TPM.Material_ID = M.Material_ID
-    WHERE TPM.Tipo_Produto_ID = TP.Tipo_Produto_ID) AS Material_Base,
+    -- Ajuste no Material: Se for nulo, avisa que está sem vínculo
+    ISNULL((SELECT STRING_AGG(M.Nome, ' / ') FROM 
+            Tipo_Produto_Material TPM 
+            JOIN Material M ON TPM.Material_ID = M.Material_ID
+            WHERE TPM.Tipo_Produto_ID = TP.Tipo_Produto_ID), 'Sem Material Definido') AS Material_Base,
     PI.Largura, PI.Altura, PI.Quantidade,
-    -- TRATAMENTO DE NULO AQUI: Se for nulo, retorna string vazia
+    PI.Caminho_Foto, -- 👈 FALTAVA ISSO: Para a foto aparecer na miniatura
     ISNULL(AA.Caminho_Arquivo, '') AS Link_Arte, 
     P.Observacao_Geral,
     PI.Observacao_Tecnica
@@ -659,9 +444,8 @@ JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID
 JOIN Tipo_Produto TP ON PI.Tipo_Produto_ID = TP.Tipo_Produto_ID
 LEFT JOIN Arquivo_Arte AA ON PI.Item_ID = AA.Item_ID 
 WHERE P.Status_ID = 4;
-
 GO
-/****** Object:  View [dbo].[VW_Monitoramento_Global]    Script Date: 28/02/2026 01:15:46 ******/
+/****** Object:  View [dbo].[VW_Monitoramento_Global]    Script Date: 01/03/2026 17:37:19 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -676,7 +460,7 @@ JOIN Tipo_Produto TP ON PI.Tipo_Produto_ID = TP.Tipo_Produto_ID
 JOIN Status_Producao SP ON P.Status_ID = SP.Status_ID;
 
 GO
-/****** Object:  Table [dbo].[Usuario]    Script Date: 28/02/2026 01:15:46 ******/
+/****** Object:  Table [dbo].[Usuario]    Script Date: 01/03/2026 17:37:19 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -694,7 +478,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  View [dbo].[VW_Fila_Producao_Completa]    Script Date: 28/02/2026 01:15:46 ******/
+/****** Object:  View [dbo].[VW_Fila_Producao_Completa]    Script Date: 01/03/2026 17:37:19 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -721,10 +505,9 @@ JOIN Clientes C ON P.Cliente_ID = C.Cliente_id
 JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID 
 JOIN Tipo_Produto TP ON PI.Tipo_Produto_ID = TP.Tipo_Produto_ID
 JOIN Usuario U ON P.Vendedor_ID = U.Usuario_ID
-WHERE P.Status_ID IN (4, 5);
-
+WHERE P.Status_ID IN (5);
 GO
-/****** Object:  View [dbo].[VW_Dashboard_Gestao_Ativa]    Script Date: 28/02/2026 01:15:46 ******/
+/****** Object:  View [dbo].[VW_Dashboard_Gestao_Ativa]    Script Date: 01/03/2026 17:37:19 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -740,7 +523,7 @@ WHERE SP.Status_ID <> 8
 GROUP BY SP.Nome, SP.Ordem;
 
 GO
-/****** Object:  View [dbo].[VW_Meus_Pedidos_Vendedor]    Script Date: 28/02/2026 01:15:46 ******/
+/****** Object:  View [dbo].[VW_Meus_Pedidos_Vendedor]    Script Date: 01/03/2026 17:37:19 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -759,7 +542,7 @@ JOIN Clientes C ON P.Cliente_ID = C.Cliente_id
 JOIN Status_Producao SP ON P.Status_ID = SP.Status_ID;
 
 GO
-/****** Object:  Table [dbo].[Cliente_PJ]    Script Date: 28/02/2026 01:15:46 ******/
+/****** Object:  Table [dbo].[Cliente_PJ]    Script Date: 01/03/2026 17:37:19 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -774,7 +557,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[Cliente_PF]    Script Date: 28/02/2026 01:15:46 ******/
+/****** Object:  Table [dbo].[Cliente_PF]    Script Date: 01/03/2026 17:37:19 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -789,7 +572,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[Endereco]    Script Date: 28/02/2026 01:15:46 ******/
+/****** Object:  Table [dbo].[Endereco]    Script Date: 01/03/2026 17:37:19 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -808,7 +591,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[Telefone]    Script Date: 28/02/2026 01:15:46 ******/
+/****** Object:  Table [dbo].[Telefone]    Script Date: 01/03/2026 17:37:19 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -823,7 +606,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  View [dbo].[VW_Pesquisa_Clientes_Vendas]    Script Date: 28/02/2026 01:15:46 ******/
+/****** Object:  View [dbo].[VW_Pesquisa_Clientes_Vendas]    Script Date: 01/03/2026 17:37:19 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -848,7 +631,7 @@ JOIN Telefone T ON C.Telefone_ID = T.Telefone_ID
 JOIN Endereco E ON C.Endereco_ID = E.Endereco_ID;
 
 GO
-/****** Object:  View [dbo].[VW_Historico_Pedidos_Cliente]    Script Date: 28/02/2026 01:15:46 ******/
+/****** Object:  View [dbo].[VW_Historico_Pedidos_Cliente]    Script Date: 01/03/2026 17:37:19 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -873,7 +656,7 @@ JOIN Tipo_Produto TP ON PI.Tipo_Produto_ID = TP.Tipo_Produto_ID
 JOIN Status_Producao S ON P.Status_ID = S.Status_ID;
 
 GO
-/****** Object:  View [dbo].[VW_Busca_Rapida_Pedido]    Script Date: 28/02/2026 01:15:46 ******/
+/****** Object:  View [dbo].[VW_Busca_Rapida_Pedido]    Script Date: 01/03/2026 17:37:19 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -896,7 +679,7 @@ JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID
 JOIN Tipo_Produto TP ON PI.Tipo_Produto_ID = TP.Tipo_Produto_ID;
 
 GO
-/****** Object:  Table [dbo].[Categoria_Produtos]    Script Date: 28/02/2026 01:15:46 ******/
+/****** Object:  Table [dbo].[Categoria_Produtos]    Script Date: 01/03/2026 17:37:19 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -914,8 +697,15 @@ PRIMARY KEY CLUSTERED
 GO
 SET IDENTITY_INSERT [dbo].[Arquivo_Arte] ON 
 
-INSERT [dbo].[Arquivo_Arte] ([Arquivo_ID], [Item_ID], [Nome_Arquivo], [Caminho_Arquivo], [Status_Arte_ID]) VALUES (1, 1, N'arquivo vovo ', N'C:\Users\porce\OneDrive\Imagens', 5)
-INSERT [dbo].[Arquivo_Arte] ([Arquivo_ID], [Item_ID], [Nome_Arquivo], [Caminho_Arquivo], [Status_Arte_ID]) VALUES (2, 2, N'arquivo vovo ', N'C:\Users\porce\OneDrive\Imagens', 2)
+INSERT [dbo].[Arquivo_Arte] ([Arquivo_ID], [Item_ID], [Nome_Arquivo], [Caminho_Arquivo], [Status_Arte_ID], [Caminho_Fisico], [ContentType], [TamanhoBytes], [DataUpload], [UsuarioUpload]) VALUES (1, 1, N'arquivo vovo ', N'C:\Users\porce\OneDrive\Imagens', 5, NULL, NULL, NULL, CAST(N'2026-02-28T20:15:16.8973519' AS DateTime2), NULL)
+INSERT [dbo].[Arquivo_Arte] ([Arquivo_ID], [Item_ID], [Nome_Arquivo], [Caminho_Arquivo], [Status_Arte_ID], [Caminho_Fisico], [ContentType], [TamanhoBytes], [DataUpload], [UsuarioUpload]) VALUES (2, 2, N'134118341497216055.jpg', N'/api/Producao/DownloadArte/2', 4, N'/data/artes/Item-2/2_20260301_035259_68631aef5a5e4a69b0865f1e97678a5a.jpg', N'image/jpeg', 2042607, CAST(N'2026-03-01T03:52:59.1788923' AS DateTime2), N'admin')
+INSERT [dbo].[Arquivo_Arte] ([Arquivo_ID], [Item_ID], [Nome_Arquivo], [Caminho_Arquivo], [Status_Arte_ID], [Caminho_Fisico], [ContentType], [TamanhoBytes], [DataUpload], [UsuarioUpload]) VALUES (2003, 1002, N'134118341497216055.jpg', N'/api/Producao/DownloadArte/2003', 4, N'/data/artes/Item-1002/1002_20260301_163527_f388c23dc73d40d18430a0d2dedb0bfd.jpg', N'image/jpeg', 2042607, CAST(N'2026-03-01T16:35:27.7815876' AS DateTime2), N'admin')
+INSERT [dbo].[Arquivo_Arte] ([Arquivo_ID], [Item_ID], [Nome_Arquivo], [Caminho_Arquivo], [Status_Arte_ID], [Caminho_Fisico], [ContentType], [TamanhoBytes], [DataUpload], [UsuarioUpload]) VALUES (3003, 2002, N'134107235287797445.jpg', N'/api/Producao/DownloadArte/3003', 4, N'/data/artes/Item-2002/2002_20260301_164249_172b6d0d49184fc9a8b4062213c6f9de.jpg', N'image/jpeg', 2204272, CAST(N'2026-03-01T16:42:49.9853023' AS DateTime2), N'admin')
+INSERT [dbo].[Arquivo_Arte] ([Arquivo_ID], [Item_ID], [Nome_Arquivo], [Caminho_Arquivo], [Status_Arte_ID], [Caminho_Fisico], [ContentType], [TamanhoBytes], [DataUpload], [UsuarioUpload]) VALUES (4003, 3002, N'teste.pdf', N'/api/Producao/DownloadArte/4003', 4, N'/data/artes/Item-3002/3002_20260301_192120_cccb3532ca7b412babfb75cbb07d689e.pdf', N'application/pdf', 25834, CAST(N'2026-03-01T19:21:21.0038535' AS DateTime2), N'admin')
+INSERT [dbo].[Arquivo_Arte] ([Arquivo_ID], [Item_ID], [Nome_Arquivo], [Caminho_Arquivo], [Status_Arte_ID], [Caminho_Fisico], [ContentType], [TamanhoBytes], [DataUpload], [UsuarioUpload]) VALUES (5003, 4002, N'teste.pdf', N'/api/Producao/DownloadArte/5003', 4, N'/data/artes/Item-4002/4002_20260301_193228_66dae0b759ba4435bca4fd470f8a9684.pdf', N'application/pdf', 25834, CAST(N'2026-03-01T19:32:28.4026925' AS DateTime2), N'admin')
+INSERT [dbo].[Arquivo_Arte] ([Arquivo_ID], [Item_ID], [Nome_Arquivo], [Caminho_Arquivo], [Status_Arte_ID], [Caminho_Fisico], [ContentType], [TamanhoBytes], [DataUpload], [UsuarioUpload]) VALUES (6003, 5002, N'teste.pdf', N'/api/Producao/DownloadArte/6003', 4, N'/data/artes/Item-5002/5002_20260301_195243_2db1341e3b73424c9058dd16ed7e2a58.pdf', N'application/pdf', 25834, CAST(N'2026-03-01T19:52:44.0159792' AS DateTime2), N'admin')
+INSERT [dbo].[Arquivo_Arte] ([Arquivo_ID], [Item_ID], [Nome_Arquivo], [Caminho_Arquivo], [Status_Arte_ID], [Caminho_Fisico], [ContentType], [TamanhoBytes], [DataUpload], [UsuarioUpload]) VALUES (6004, 5003, N'teste.pdf', N'/api/Producao/DownloadArte/6004', 4, N'/data/artes/Item-5003/5003_20260301_200056_5bcf8c65bf0d42e79864cbbd11371c54.pdf', N'application/pdf', 25834, CAST(N'2026-03-01T20:00:56.8066950' AS DateTime2), N'admin')
+INSERT [dbo].[Arquivo_Arte] ([Arquivo_ID], [Item_ID], [Nome_Arquivo], [Caminho_Arquivo], [Status_Arte_ID], [Caminho_Fisico], [ContentType], [TamanhoBytes], [DataUpload], [UsuarioUpload]) VALUES (6005, 5004, N'teste.pdf', N'/api/Producao/DownloadArte/6005', 4, N'/data/artes/Item-5004/5004_20260301_200102_d00c50f9a68246a684a184eec1362bfb.pdf', N'application/pdf', 25834, CAST(N'2026-03-01T20:01:02.1260460' AS DateTime2), N'admin')
 SET IDENTITY_INSERT [dbo].[Arquivo_Arte] OFF
 GO
 SET IDENTITY_INSERT [dbo].[Categoria_Produtos] ON 
@@ -930,16 +720,19 @@ GO
 SET IDENTITY_INSERT [dbo].[Cliente_PF] ON 
 
 INSERT [dbo].[Cliente_PF] ([Cliente_PF_ID], [CPF], [Data_Cadastro]) VALUES (1, N'03745466279', CAST(N'2026-02-22T17:09:27.507' AS DateTime))
+INSERT [dbo].[Cliente_PF] ([Cliente_PF_ID], [CPF], [Data_Cadastro]) VALUES (2, N'00020202020', CAST(N'2026-02-28T04:58:36.937' AS DateTime))
 SET IDENTITY_INSERT [dbo].[Cliente_PF] OFF
 GO
 SET IDENTITY_INSERT [dbo].[Clientes] ON 
 
 INSERT [dbo].[Clientes] ([Cliente_id], [Endereco_ID], [Telefone_ID], [PF_ID], [PJ_ID], [Email], [Nome], [Ativo]) VALUES (1, 1, 1, 1, NULL, N'porcellani303@gmail.com', N'Jose', 1)
+INSERT [dbo].[Clientes] ([Cliente_id], [Endereco_ID], [Telefone_ID], [PF_ID], [PJ_ID], [Email], [Nome], [Ativo]) VALUES (2, 2, 2, 2, NULL, N'ghyuftgf@gmail.com', N'Giovani Thofani', 1)
 SET IDENTITY_INSERT [dbo].[Clientes] OFF
 GO
 SET IDENTITY_INSERT [dbo].[Endereco] ON 
 
 INSERT [dbo].[Endereco] ([Endereco_ID], [Cidade], [CEP], [Bairro], [Rua], [Numero], [Referencia]) VALUES (1, N'maringa', N'87023621', N'jardim vitoria', N'pioneiro jaoao zavatini', 723, NULL)
+INSERT [dbo].[Endereco] ([Endereco_ID], [Cidade], [CEP], [Bairro], [Rua], [Numero], [Referencia]) VALUES (2, N'paudalho', N'87696969', N'ate enjua', N'ate chora', 7969, NULL)
 SET IDENTITY_INSERT [dbo].[Endereco] OFF
 GO
 SET IDENTITY_INSERT [dbo].[Historico_Status] ON 
@@ -953,6 +746,22 @@ INSERT [dbo].[Historico_Status] ([Historico_ID], [Pedido_ID], [Status_ID], [Data
 INSERT [dbo].[Historico_Status] ([Historico_ID], [Pedido_ID], [Status_ID], [Data_Mudanca], [Usuario_ID]) VALUES (3002, 1, 4, CAST(N'2026-02-27T03:13:54.067' AS DateTime), 2)
 INSERT [dbo].[Historico_Status] ([Historico_ID], [Pedido_ID], [Status_ID], [Data_Mudanca], [Usuario_ID]) VALUES (4002, 1, 8, CAST(N'2026-02-27T04:00:06.840' AS DateTime), 1)
 INSERT [dbo].[Historico_Status] ([Historico_ID], [Pedido_ID], [Status_ID], [Data_Mudanca], [Usuario_ID]) VALUES (4003, 1, 5, CAST(N'2026-02-27T04:05:52.660' AS DateTime), 1)
+INSERT [dbo].[Historico_Status] ([Historico_ID], [Pedido_ID], [Status_ID], [Data_Mudanca], [Usuario_ID]) VALUES (5002, 1002, 1, CAST(N'2026-02-28T05:17:41.950' AS DateTime), 1)
+INSERT [dbo].[Historico_Status] ([Historico_ID], [Pedido_ID], [Status_ID], [Data_Mudanca], [Usuario_ID]) VALUES (6002, 2002, 1, CAST(N'2026-03-01T16:36:40.157' AS DateTime), 1)
+INSERT [dbo].[Historico_Status] ([Historico_ID], [Pedido_ID], [Status_ID], [Data_Mudanca], [Usuario_ID]) VALUES (7002, 3, 4, CAST(N'2026-03-01T18:55:43.637' AS DateTime), 2)
+INSERT [dbo].[Historico_Status] ([Historico_ID], [Pedido_ID], [Status_ID], [Data_Mudanca], [Usuario_ID]) VALUES (8002, 1002, 4, CAST(N'2026-03-01T19:19:12.367' AS DateTime), 2)
+INSERT [dbo].[Historico_Status] ([Historico_ID], [Pedido_ID], [Status_ID], [Data_Mudanca], [Usuario_ID]) VALUES (8003, 2002, 4, CAST(N'2026-03-01T19:19:29.040' AS DateTime), 2)
+INSERT [dbo].[Historico_Status] ([Historico_ID], [Pedido_ID], [Status_ID], [Data_Mudanca], [Usuario_ID]) VALUES (8004, 3002, 1, CAST(N'2026-03-01T19:21:09.617' AS DateTime), 1)
+INSERT [dbo].[Historico_Status] ([Historico_ID], [Pedido_ID], [Status_ID], [Data_Mudanca], [Usuario_ID]) VALUES (8005, 3002, 4, CAST(N'2026-03-01T19:21:24.433' AS DateTime), 2)
+INSERT [dbo].[Historico_Status] ([Historico_ID], [Pedido_ID], [Status_ID], [Data_Mudanca], [Usuario_ID]) VALUES (9002, 4002, 1, CAST(N'2026-03-01T19:32:15.920' AS DateTime), 1)
+INSERT [dbo].[Historico_Status] ([Historico_ID], [Pedido_ID], [Status_ID], [Data_Mudanca], [Usuario_ID]) VALUES (9003, 4002, 4, CAST(N'2026-03-01T19:32:32.767' AS DateTime), 2)
+INSERT [dbo].[Historico_Status] ([Historico_ID], [Pedido_ID], [Status_ID], [Data_Mudanca], [Usuario_ID]) VALUES (10002, 5002, 1, CAST(N'2026-03-01T19:52:34.987' AS DateTime), 1)
+INSERT [dbo].[Historico_Status] ([Historico_ID], [Pedido_ID], [Status_ID], [Data_Mudanca], [Usuario_ID]) VALUES (10003, 5002, 4, CAST(N'2026-03-01T19:52:50.477' AS DateTime), 2)
+INSERT [dbo].[Historico_Status] ([Historico_ID], [Pedido_ID], [Status_ID], [Data_Mudanca], [Usuario_ID]) VALUES (10004, 5003, 1, CAST(N'2026-03-01T19:54:11.233' AS DateTime), 1)
+INSERT [dbo].[Historico_Status] ([Historico_ID], [Pedido_ID], [Status_ID], [Data_Mudanca], [Usuario_ID]) VALUES (10005, 5004, 1, CAST(N'2026-03-01T20:00:44.743' AS DateTime), 1)
+INSERT [dbo].[Historico_Status] ([Historico_ID], [Pedido_ID], [Status_ID], [Data_Mudanca], [Usuario_ID]) VALUES (10006, 5003, 4, CAST(N'2026-03-01T20:01:04.300' AS DateTime), 2)
+INSERT [dbo].[Historico_Status] ([Historico_ID], [Pedido_ID], [Status_ID], [Data_Mudanca], [Usuario_ID]) VALUES (10007, 5004, 4, CAST(N'2026-03-01T20:01:10.400' AS DateTime), 2)
+INSERT [dbo].[Historico_Status] ([Historico_ID], [Pedido_ID], [Status_ID], [Data_Mudanca], [Usuario_ID]) VALUES (11002, 3002, 5, CAST(N'2026-03-01T20:27:36.097' AS DateTime), 1)
 SET IDENTITY_INSERT [dbo].[Historico_Status] OFF
 GO
 SET IDENTITY_INSERT [dbo].[Material] ON 
@@ -979,13 +788,27 @@ GO
 SET IDENTITY_INSERT [dbo].[Pedido] ON 
 
 INSERT [dbo].[Pedido] ([Pedido_ID], [Cliente_ID], [OS_Externa], [Data_Pedido], [Status_ID], [Vendedor_ID], [Observacao_Geral], [Valor_Total], [Forma_Pagamento]) VALUES (1, 1, N'OS-202', CAST(N'2026-02-22T17:46:33.100' AS DateTime), 5, 2, N'Banner para fachada', CAST(0.00 AS Decimal(10, 2)), NULL)
-INSERT [dbo].[Pedido] ([Pedido_ID], [Cliente_ID], [OS_Externa], [Data_Pedido], [Status_ID], [Vendedor_ID], [Observacao_Geral], [Valor_Total], [Forma_Pagamento]) VALUES (3, 1, N'002 25', CAST(N'2026-02-24T01:18:15.910' AS DateTime), 1, 1, N'ghfdesdgfvg nuiedfhapi87fgey nj[fhnbrweupibghf', CAST(0.00 AS Decimal(10, 2)), NULL)
+INSERT [dbo].[Pedido] ([Pedido_ID], [Cliente_ID], [OS_Externa], [Data_Pedido], [Status_ID], [Vendedor_ID], [Observacao_Geral], [Valor_Total], [Forma_Pagamento]) VALUES (3, 1, N'002 25', CAST(N'2026-02-24T01:18:15.910' AS DateTime), 4, 1, N'ghfdesdgfvg nuiedfhapi87fgey nj[fhnbrweupibghf', CAST(0.00 AS Decimal(10, 2)), NULL)
+INSERT [dbo].[Pedido] ([Pedido_ID], [Cliente_ID], [OS_Externa], [Data_Pedido], [Status_ID], [Vendedor_ID], [Observacao_Geral], [Valor_Total], [Forma_Pagamento]) VALUES (1002, 2, N'069706', CAST(N'2026-02-28T05:17:41.947' AS DateTime), 4, 2, N'fazer com 25 cm e grossura de 25cm', CAST(0.00 AS Decimal(10, 2)), NULL)
+INSERT [dbo].[Pedido] ([Pedido_ID], [Cliente_ID], [OS_Externa], [Data_Pedido], [Status_ID], [Vendedor_ID], [Observacao_Geral], [Valor_Total], [Forma_Pagamento]) VALUES (2002, 2, N'001564', CAST(N'2026-03-01T16:36:40.153' AS DateTime), 4, 2, N'jose ', CAST(0.00 AS Decimal(10, 2)), NULL)
+INSERT [dbo].[Pedido] ([Pedido_ID], [Cliente_ID], [OS_Externa], [Data_Pedido], [Status_ID], [Vendedor_ID], [Observacao_Geral], [Valor_Total], [Forma_Pagamento]) VALUES (3002, 2, N'20584', CAST(N'2026-03-01T19:21:09.613' AS DateTime), 5, 2, N'dfswfegegsvf', CAST(0.00 AS Decimal(10, 2)), NULL)
+INSERT [dbo].[Pedido] ([Pedido_ID], [Cliente_ID], [OS_Externa], [Data_Pedido], [Status_ID], [Vendedor_ID], [Observacao_Geral], [Valor_Total], [Forma_Pagamento]) VALUES (4002, 1, N'423423', CAST(N'2026-03-01T19:32:15.913' AS DateTime), 4, 2, N'cdsafcascd', CAST(0.00 AS Decimal(10, 2)), NULL)
+INSERT [dbo].[Pedido] ([Pedido_ID], [Cliente_ID], [OS_Externa], [Data_Pedido], [Status_ID], [Vendedor_ID], [Observacao_Geral], [Valor_Total], [Forma_Pagamento]) VALUES (5002, 2, N'002526', CAST(N'2026-03-01T19:52:34.980' AS DateTime), 4, 2, N'paca de sinalizacao com poste', CAST(0.00 AS Decimal(10, 2)), NULL)
+INSERT [dbo].[Pedido] ([Pedido_ID], [Cliente_ID], [OS_Externa], [Data_Pedido], [Status_ID], [Vendedor_ID], [Observacao_Geral], [Valor_Total], [Forma_Pagamento]) VALUES (5003, 1, N'34342', CAST(N'2026-03-01T19:54:11.233' AS DateTime), 4, 2, N'32e', CAST(0.00 AS Decimal(10, 2)), NULL)
+INSERT [dbo].[Pedido] ([Pedido_ID], [Cliente_ID], [OS_Externa], [Data_Pedido], [Status_ID], [Vendedor_ID], [Observacao_Geral], [Valor_Total], [Forma_Pagamento]) VALUES (5004, 1, N'32423', CAST(N'2026-03-01T20:00:44.743' AS DateTime), 4, 2, N'teste', CAST(0.00 AS Decimal(10, 2)), NULL)
 SET IDENTITY_INSERT [dbo].[Pedido] OFF
 GO
 SET IDENTITY_INSERT [dbo].[Pedido_Item] ON 
 
 INSERT [dbo].[Pedido_Item] ([Item_ID], [Pedido_ID], [Tipo_Produto_ID], [Largura], [Altura], [Quantidade], [Observacao_Tecnica], [Caminho_Foto]) VALUES (1, 1, 1, CAST(1.50 AS Decimal(10, 2)), CAST(0.80 AS Decimal(10, 2)), 1, N'Lona 440g com ilhós', N'uploads/banner_cliente1.jpg')
 INSERT [dbo].[Pedido_Item] ([Item_ID], [Pedido_ID], [Tipo_Produto_ID], [Largura], [Altura], [Quantidade], [Observacao_Tecnica], [Caminho_Foto]) VALUES (2, 3, 25, CAST(111.00 AS Decimal(10, 2)), CAST(1525.00 AS Decimal(10, 2)), 155, N'hjkrefgvbtyuwesgvfc', N'')
+INSERT [dbo].[Pedido_Item] ([Item_ID], [Pedido_ID], [Tipo_Produto_ID], [Largura], [Altura], [Quantidade], [Observacao_Tecnica], [Caminho_Foto]) VALUES (1002, 1002, 19, CAST(25.00 AS Decimal(10, 2)), CAST(25.00 AS Decimal(10, 2)), 25, N'impressao uv urgente', N'http://localhost:5001/uploads/0eaf29ae224947b9aeeb84aeba10d86d.jpg')
+INSERT [dbo].[Pedido_Item] ([Item_ID], [Pedido_ID], [Tipo_Produto_ID], [Largura], [Altura], [Quantidade], [Observacao_Tecnica], [Caminho_Foto]) VALUES (2002, 2002, 19, CAST(20.00 AS Decimal(10, 2)), CAST(20.00 AS Decimal(10, 2)), 1, N'aco inox gravado com impressao uv e verniz ', N'http://localhost:5001/uploads/83596f21a62e457d921d41dfb432b0d7.jpg')
+INSERT [dbo].[Pedido_Item] ([Item_ID], [Pedido_ID], [Tipo_Produto_ID], [Largura], [Altura], [Quantidade], [Observacao_Tecnica], [Caminho_Foto]) VALUES (3002, 3002, 3, CAST(25.00 AS Decimal(10, 2)), CAST(33.00 AS Decimal(10, 2)), 1, N'fgWEFwwgrg', N'http://localhost:5001/uploads/e5602582df24415ab0c160768880bc86.jpg')
+INSERT [dbo].[Pedido_Item] ([Item_ID], [Pedido_ID], [Tipo_Produto_ID], [Largura], [Altura], [Quantidade], [Observacao_Tecnica], [Caminho_Foto]) VALUES (4002, 4002, 15, CAST(3.00 AS Decimal(10, 2)), CAST(22.00 AS Decimal(10, 2)), 1, N'casfdvwv', N'http://localhost:5001/uploads/25ad78be4d8043e39f90fbea8b3a2a39.jpg')
+INSERT [dbo].[Pedido_Item] ([Item_ID], [Pedido_ID], [Tipo_Produto_ID], [Largura], [Altura], [Quantidade], [Observacao_Tecnica], [Caminho_Foto]) VALUES (5002, 5002, 12, CAST(25.00 AS Decimal(10, 2)), CAST(30.00 AS Decimal(10, 2)), 15, N'poste com 3 metos de coprimento e reforco ', N'http://localhost:5001/uploads/97b283458ed94502879346b49583adee.webp')
+INSERT [dbo].[Pedido_Item] ([Item_ID], [Pedido_ID], [Tipo_Produto_ID], [Largura], [Altura], [Quantidade], [Observacao_Tecnica], [Caminho_Foto]) VALUES (5003, 5003, 15, CAST(324.00 AS Decimal(10, 2)), CAST(23.00 AS Decimal(10, 2)), 132, N'32er', N'http://localhost:5001/uploads/155ae0c953aa4a40b9a298ab5af8480e.jpg')
+INSERT [dbo].[Pedido_Item] ([Item_ID], [Pedido_ID], [Tipo_Produto_ID], [Largura], [Altura], [Quantidade], [Observacao_Tecnica], [Caminho_Foto]) VALUES (5004, 5004, 34, CAST(222.00 AS Decimal(10, 2)), CAST(22.00 AS Decimal(10, 2)), 1, N'teste', NULL)
 SET IDENTITY_INSERT [dbo].[Pedido_Item] OFF
 GO
 SET IDENTITY_INSERT [dbo].[Status_Arte] ON 
@@ -1012,6 +835,7 @@ GO
 SET IDENTITY_INSERT [dbo].[Telefone] ON 
 
 INSERT [dbo].[Telefone] ([Telefone_ID], [DDD], [Numero]) VALUES (1, N'44', N'997599415')
+INSERT [dbo].[Telefone] ([Telefone_ID], [DDD], [Numero]) VALUES (2, N'016', N'996999699')
 SET IDENTITY_INSERT [dbo].[Telefone] OFF
 GO
 SET IDENTITY_INSERT [dbo].[Tipo_Produto] ON 
@@ -1077,10 +901,13 @@ INSERT [dbo].[Tipo_Produto_Material] ([Tipo_Produto_ID], [Material_ID]) VALUES (
 INSERT [dbo].[Tipo_Produto_Material] ([Tipo_Produto_ID], [Material_ID]) VALUES (10, 13)
 INSERT [dbo].[Tipo_Produto_Material] ([Tipo_Produto_ID], [Material_ID]) VALUES (11, 3)
 INSERT [dbo].[Tipo_Produto_Material] ([Tipo_Produto_ID], [Material_ID]) VALUES (11, 13)
+INSERT [dbo].[Tipo_Produto_Material] ([Tipo_Produto_ID], [Material_ID]) VALUES (12, 12)
+INSERT [dbo].[Tipo_Produto_Material] ([Tipo_Produto_ID], [Material_ID]) VALUES (12, 16)
 INSERT [dbo].[Tipo_Produto_Material] ([Tipo_Produto_ID], [Material_ID]) VALUES (13, 5)
 INSERT [dbo].[Tipo_Produto_Material] ([Tipo_Produto_ID], [Material_ID]) VALUES (14, 6)
 INSERT [dbo].[Tipo_Produto_Material] ([Tipo_Produto_ID], [Material_ID]) VALUES (15, 4)
 INSERT [dbo].[Tipo_Produto_Material] ([Tipo_Produto_ID], [Material_ID]) VALUES (15, 9)
+INSERT [dbo].[Tipo_Produto_Material] ([Tipo_Produto_ID], [Material_ID]) VALUES (19, 11)
 INSERT [dbo].[Tipo_Produto_Material] ([Tipo_Produto_ID], [Material_ID]) VALUES (20, 1)
 INSERT [dbo].[Tipo_Produto_Material] ([Tipo_Produto_ID], [Material_ID]) VALUES (20, 10)
 INSERT [dbo].[Tipo_Produto_Material] ([Tipo_Produto_ID], [Material_ID]) VALUES (21, 10)
@@ -1151,7 +978,7 @@ SET IDENTITY_INSERT [dbo].[Usuario] OFF
 GO
 SET ANSI_PADDING ON
 GO
-/****** Object:  Index [UQ__Cliente___C1F897319EEFD529]    Script Date: 28/02/2026 01:15:46 ******/
+/****** Object:  Index [UQ__Cliente___C1F897319EEFD529]    Script Date: 01/03/2026 17:37:19 ******/
 ALTER TABLE [dbo].[Cliente_PF] ADD UNIQUE NONCLUSTERED 
 (
 	[CPF] ASC
@@ -1159,7 +986,7 @@ ALTER TABLE [dbo].[Cliente_PF] ADD UNIQUE NONCLUSTERED
 GO
 SET ANSI_PADDING ON
 GO
-/****** Object:  Index [UQ__Cliente___AA57D6B4F6A8D13D]    Script Date: 28/02/2026 01:15:46 ******/
+/****** Object:  Index [UQ__Cliente___AA57D6B4F6A8D13D]    Script Date: 01/03/2026 17:37:19 ******/
 ALTER TABLE [dbo].[Cliente_PJ] ADD UNIQUE NONCLUSTERED 
 (
 	[CNPJ] ASC
@@ -1167,7 +994,7 @@ ALTER TABLE [dbo].[Cliente_PJ] ADD UNIQUE NONCLUSTERED
 GO
 SET ANSI_PADDING ON
 GO
-/****** Object:  Index [UQ__Pedido__3FEC44085A5D2F43]    Script Date: 28/02/2026 01:15:46 ******/
+/****** Object:  Index [UQ__Pedido__3FEC44085A5D2F43]    Script Date: 01/03/2026 17:37:19 ******/
 ALTER TABLE [dbo].[Pedido] ADD UNIQUE NONCLUSTERED 
 (
 	[OS_Externa] ASC
@@ -1175,11 +1002,15 @@ ALTER TABLE [dbo].[Pedido] ADD UNIQUE NONCLUSTERED
 GO
 SET ANSI_PADDING ON
 GO
-/****** Object:  Index [UQ__Usuario__5E55825BEAAA9BFA]    Script Date: 28/02/2026 01:15:46 ******/
+/****** Object:  Index [UQ__Usuario__5E55825BEAAA9BFA]    Script Date: 01/03/2026 17:37:19 ******/
 ALTER TABLE [dbo].[Usuario] ADD UNIQUE NONCLUSTERED 
 (
 	[Login] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[Arquivo_Arte] ADD  CONSTRAINT [DF_Arquivo_Arte_CaminhoArquivo]  DEFAULT ('/api/Producao/DownloadArte/temp') FOR [Caminho_Arquivo]
+GO
+ALTER TABLE [dbo].[Arquivo_Arte] ADD  CONSTRAINT [DF_Arquivo_Arte_DataUpload]  DEFAULT (sysdatetime()) FOR [DataUpload]
 GO
 ALTER TABLE [dbo].[Categoria_Produtos] ADD  DEFAULT ((1)) FOR [Ativo]
 GO
@@ -1294,7 +1125,7 @@ ALTER TABLE [dbo].[Clientes]  WITH CHECK ADD  CONSTRAINT [CK_PJ_PF] CHECK  (([PJ
 GO
 ALTER TABLE [dbo].[Clientes] CHECK CONSTRAINT [CK_PJ_PF]
 GO
-/****** Object:  StoredProcedure [dbo].[SP_Atualizar_Status_Arte]    Script Date: 28/02/2026 01:15:46 ******/
+/****** Object:  StoredProcedure [dbo].[SP_Atualizar_Status_Arte]    Script Date: 01/03/2026 17:37:19 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1338,7 +1169,7 @@ BEGIN
 END
 
 GO
-/****** Object:  StoredProcedure [dbo].[SP_Atualizar_Status_Pedido]    Script Date: 28/02/2026 01:15:46 ******/
+/****** Object:  StoredProcedure [dbo].[SP_Atualizar_Status_Pedido]    Script Date: 01/03/2026 17:37:19 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1384,7 +1215,7 @@ BEGIN
 END
 
 GO
-/****** Object:  StoredProcedure [dbo].[SP_Cadastrar_Cliente_Completo]    Script Date: 28/02/2026 01:15:46 ******/
+/****** Object:  StoredProcedure [dbo].[SP_Cadastrar_Cliente_Completo]    Script Date: 01/03/2026 17:37:19 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1454,7 +1285,7 @@ BEGIN
 END
 
 GO
-/****** Object:  StoredProcedure [dbo].[SP_Cadastrar_Tipo_Produto_Completo]    Script Date: 28/02/2026 01:15:46 ******/
+/****** Object:  StoredProcedure [dbo].[SP_Cadastrar_Tipo_Produto_Completo]    Script Date: 01/03/2026 17:37:19 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1509,7 +1340,7 @@ BEGIN
 END
 
 GO
-/****** Object:  StoredProcedure [dbo].[SP_Criar_Pedido_Com_Item]    Script Date: 28/02/2026 01:15:46 ******/
+/****** Object:  StoredProcedure [dbo].[SP_Criar_Pedido_Com_Item]    Script Date: 01/03/2026 17:37:19 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1548,7 +1379,7 @@ BEGIN
 END
 
 GO
-/****** Object:  StoredProcedure [dbo].[SP_Validar_Login]    Script Date: 28/02/2026 01:15:46 ******/
+/****** Object:  StoredProcedure [dbo].[SP_Validar_Login]    Script Date: 01/03/2026 17:37:19 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1571,7 +1402,7 @@ BEGIN
 END
 
 GO
-/****** Object:  StoredProcedure [dbo].[SP_Vincular_Arquivo_Arte]    Script Date: 28/02/2026 01:15:46 ******/
+/****** Object:  StoredProcedure [dbo].[SP_Vincular_Arquivo_Arte]    Script Date: 01/03/2026 17:37:19 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1608,1020 +1439,7 @@ BEGIN
 END
 
 GO
-/****** Object:  Trigger [dbo].[TR_ArteReprovada_ArquivaPedido]    Script Date: 28/02/2026 01:15:46 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE   TRIGGER [dbo].[TR_ArteReprovada_ArquivaPedido]
-ON [dbo].[Arquivo_Arte]
-AFTER UPDATE, INSERT
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    -- ID 5 = Reprovada (conforme seu INSERT na Status_Arte)
-    -- ID 8 = Arquivado (conforme seu INSERT na Status_Producao)
-    
-    IF EXISTS (SELECT 1 FROM inserted WHERE Status_Arte_ID = 5)
-    BEGIN
-        UPDATE P
-        SET P.Status_ID = 8
-        FROM Pedido P
-        INNER JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID
-        INNER JOIN inserted i ON PI.Item_ID = i.Item_ID
-        WHERE i.Status_Arte_ID = 5;
-        
-        PRINT 'Automação: Pedido arquivado porque a arte foi marcada como Reprovada.';
-    END
-END
-
-
-
-
-GO
-ALTER TABLE [dbo].[Arquivo_Arte] ENABLE TRIGGER [TR_ArteReprovada_ArquivaPedido]
-GO
-/****** Object:  Trigger [dbo].[TR_StatusArte_RefleteNoPedido]    Script Date: 28/02/2026 01:15:46 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE   TRIGGER [dbo].[TR_StatusArte_RefleteNoPedido]
-ON [dbo].[Arquivo_Arte]
-AFTER INSERT, UPDATE
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    -- Em Correção (3) -> volta pedido para Aguardando Arte (2)
-    UPDATE P
-    SET P.Status_ID = 2
-    FROM Pedido P
-    JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID
-    JOIN inserted i ON PI.Item_ID = i.Item_ID
-    WHERE i.Status_Arte_ID = 3;
-
-    -- Aprovada (4) -> pedido vai para Arte Aprovada (4) (entra na impressão)
-    UPDATE P
-    SET P.Status_ID = 4
-    FROM Pedido P
-    JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID
-    JOIN inserted i ON PI.Item_ID = i.Item_ID
-    WHERE i.Status_Arte_ID = 4;
-
-    -- Reprovada (5) -> pedido arquivado (8)
-    UPDATE P
-    SET P.Status_ID = 8
-    FROM Pedido P
-    JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID
-    JOIN inserted i ON PI.Item_ID = i.Item_ID
-    WHERE i.Status_Arte_ID = 5;
-END
-
-GO
-ALTER TABLE [dbo].[Arquivo_Arte] ENABLE TRIGGER [TR_StatusArte_RefleteNoPedido]
-GO
-/****** Object:  Trigger [dbo].[TR_Gerar_Historico_Status]    Script Date: 28/02/2026 01:15:46 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE   TRIGGER [dbo].[TR_Gerar_Historico_Status]
-ON [dbo].[Pedido]
-AFTER UPDATE
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    IF UPDATE(Status_ID)
-    BEGIN
-        DECLARE @uid INT = TRY_CONVERT(INT, SESSION_CONTEXT(N'UsuarioId'));
-        IF @uid IS NULL SET @uid = 1;
-
-        INSERT INTO dbo.Historico_Status (Pedido_ID, Status_ID, Data_Mudanca, Usuario_ID)
-        SELECT i.Pedido_ID, i.Status_ID, GETDATE(), @uid
-        FROM inserted i
-        JOIN deleted d ON i.Pedido_ID = d.Pedido_ID
-        WHERE i.Status_ID <> d.Status_ID;
-    END
-END
-
-GO
-ALTER TABLE [dbo].[Pedido] ENABLE TRIGGER [TR_Gerar_Historico_Status]
-GO
-/****** Object:  Trigger [dbo].[TR_Historico_Status_Insert]    Script Date: 28/02/2026 01:15:46 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE   TRIGGER [dbo].[TR_Historico_Status_Insert]
-ON [dbo].[Pedido]
-AFTER INSERT
-AS
-BEGIN
-    INSERT INTO Historico_Status (Pedido_ID, Status_ID, Data_Mudanca, Usuario_ID)
-    SELECT Pedido_ID, Status_ID, GETDATE(), 1
-    FROM inserted;
-END
-
-
-GO
-ALTER TABLE [dbo].[Pedido] ENABLE TRIGGER [TR_Historico_Status_Insert]
-GO
-/****** Object:  Trigger [dbo].[TR_Proibir_Delete_Pedido]    Script Date: 28/02/2026 01:15:46 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE   TRIGGER [dbo].[TR_Proibir_Delete_Pedido]
-ON [dbo].[Pedido]
-FOR DELETE
-AS
-BEGIN
-    ROLLBACK TRANSACTION;
-    RAISERROR ('Erro: Não é permitido excluir pedidos. Altere o status se necessário.', 16, 1);
-END
-
-
-GO
-ALTER TABLE [dbo].[Pedido] ENABLE TRIGGER [TR_Proibir_Delete_Pedido]
-GO
-/****** Object:  Trigger [dbo].[TR_Validar_Dimensoes_Item]    Script Date: 28/02/2026 01:15:46 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE   TRIGGER [dbo].[TR_Validar_Dimensoes_Item]
-ON [dbo].[Pedido_Item]
-AFTER INSERT, UPDATE
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    -- Se houver qualquer item com Largura ou Altura menor ou igual a zero
-    IF EXISTS (
-        SELECT 1 
-        FROM inserted 
-        WHERE Largura <= 0 OR Altura <= 0
-    )
-    BEGIN
-        -- O SQL cancela a operação e envia um aviso claro para a tela
-        ROLLBACK TRANSACTION;
-        RAISERROR ('Erro de Segurança: Largura e Altura devem ser maiores que zero.', 16, 1);
-    END
-END
-
-GO
-ALTER TABLE [dbo].[Pedido_Item] ENABLE TRIGGER [TR_Validar_Dimensoes_Item]
-GO
 USE [master]
 GO
 ALTER DATABASE [Controle_Vendas] SET  READ_WRITE 
 GO
-/*
-  SISTEMA DE CONTROLE DE VENDAS E PRODUÇÃO - COMUNICAÇÃO VISUAL
-  Autor: [Jose Porcellani/GitHub]
-  Data: Fevereiro 2026
-*/
-
--- 1. CRIAÇÃO DO BANCO DE DADOS
-
-CREATE DATABASE Controle_Vendas;
-
-USE Controle_Vendas;
-
-CREATE TABLE Cliente_PJ(
-Cliente_PJ_ID INT IDENTITY(1,1) PRIMARY KEY,
-CNPJ NVARCHAR (14) NOT NULL UNIQUE,
-Data_Cadastro DATETIME DEFAULT GETDATE() NOT NULL
-);
-
-CREATE TABLE Cliente_PF(
-Cliente_PF_ID INT IDENTITY(1,1) PRIMARY KEY,
-CPF NVARCHAR (11) NOT NULL UNIQUE,
-Data_Cadastro DATETIME DEFAULT GETDATE() NOT NULL
-);
-
-
-CREATE TABLE Endereco(
-Endereco_ID INT IDENTITY(1,1) PRIMARY KEY,
-Cidade NVARCHAR (50) NOT NULL,
-CEP NVARCHAR (8) NOT NULL,
-Bairro NVARCHAR (60) NOT NULL,
-Rua NVARCHAR (100) NOT NULL,
-Numero INT NULL,
-Referencia NVARCHAR (255)
-);
-
-
-CREATE TABLE Telefone(
-Telefone_ID INT IDENTITY (1,1) PRIMARY KEY,
-DDD NVARCHAR(3) NOT NULL,
-Numero NVARCHAR (9) NOT NULL
-);
-
-CREATE TABLE Clientes (
-Cliente_id INT IDENTITY (1,1) PRIMARY KEY,
-Endereco_ID INT NOT NULL,
-Telefone_ID INT NOT NULL,
-PF_ID INT NULL,
-PJ_ID INT NULL,
-Email NVARCHAR (100) NOT NULL,
-Nome NVARCHAR (50) NOT NULL,
-Ativo bit DEFAULT (1) NOT NULL,
-CONSTRAINT FK_Cliente_Endereco FOREIGN KEY (Endereco_ID) REFERENCES Endereco(Endereco_ID),
-CONSTRAINT FK_Cliente_Telefone FOREIGN KEY (Telefone_ID) REFERENCES Telefone(Telefone_ID),
-CONSTRAINT FK_Cliente_PJ FOREIGN KEY (PJ_ID) REFERENCES Cliente_PJ(Cliente_PJ_ID),
-CONSTRAINT FK_Cliente_PF FOREIGN KEY (PF_ID) REFERENCES Cliente_PF(Cliente_PF_ID),
-CONSTRAINT CK_PJ_PF CHECK ((PJ_ID IS NOT NULL AND PF_ID IS NULL) OR (PJ_ID IS NULL AND PF_ID IS NOT NULL))
-);
-
-CREATE TABLE Usuario(
-Usuario_ID INT IDENTITY (1,1) PRIMARY KEY,
-Nome NVARCHAR(255) NOT NULL,
-Funcao NVARCHAR (50) NOT NULL,
-Login NVARCHAR(50) UNIQUE,
-Senha NVARCHAR(255),
-Nivel_Acesso NVARCHAR(20) DEFAULT 'Vendedor'
-);
-
-CREATE TABLE Categoria_Produtos(
-Categoria_ID INT IDENTITY (1,1) PRIMARY KEY,
-Nome NVARCHAR (100) NOT NULL,
-Descricao NVARCHAR (255) NOT NULL, 
-Ativo BIT NOT NULL DEFAULT 1
-);
-
-CREATE TABLE Tipo_Produto(
-Tipo_Produto_ID INT IDENTITY (1,1) PRIMARY KEY,
-Categoria_ID INT NOT NULL,
-Nome NVARCHAR(100) NOT NULL,
-Descricao_Tecnica NVARCHAR(255) NOT NULL,
-Usa_Adesivo BIT,
-Usa_Mascara BIT,
-Ativo BIT NOT NULL DEFAULT 1,
-CONSTRAINT FK_Tipo_Produto_Categoria_ID FOREIGN KEY (Categoria_ID) References Categoria_Produtos(Categoria_ID)
-);
-
-
-
-CREATE TABLE Status_Producao(
-Status_ID INT IDENTITY (1,1) PRIMARY KEY,
-Nome NVARCHAR (100) NOT NULL,
-Ordem INT NOT NULL,
-Ativo BIT NOT NULL DEFAULT 1
-);
-
-CREATE TABLE Pedido(
-Pedido_ID INT IDENTITY(1,1) PRIMARY KEY,
-Cliente_ID INT NOT NULL,
-OS_Externa NVARCHAR (6) NOT NULL UNIQUE,
-Data_Pedido DATETIME DEFAULT GETDATE(),
-Status_ID INT NOT NULL,
-Vendedor_ID INT,
-Observacao_Geral NVARCHAR (255) NOT NULL,
- Valor_Total DECIMAL(10,2) DEFAULT 0,
-Forma_Pagamento NVARCHAR(50),
-CONSTRAINT FK_Pedido_Cliente_ID FOREIGN KEY (Cliente_ID) REFERENCES Clientes(Cliente_id),
-CONSTRAINT FK_Pedido_Status_ID FOREIGN KEY (Status_ID) REFERENCES Status_Producao(Status_ID),
-CONSTRAINT FK_Pedido_Vendedor FOREIGN KEY (Vendedor_ID) REFERENCES Usuario(Usuario_ID)
-);
-
-CREATE TABLE Pedido_Item(
-Item_ID INT IDENTITY(1,1) PRIMARY KEY,
-Pedido_ID INT NOT NULL,
-Tipo_Produto_ID INT NOT NULL,
-Largura DECIMAL(10,2) NOT NULL,
-Altura DECIMAL (10,2) NOT NULL,
-Quantidade INT NOT NULL,
-Observacao_Tecnica NVARCHAR(255) NOT NULL,
-Caminho_Foto NVARCHAR(255),
-CONSTRAINT FK_Pedido_Item_Pedido_ID FOREIGN KEY (Pedido_ID) REFERENCES Pedido(Pedido_ID),
-CONSTRAINT FK_Pedido_Item_Tipo_Produto_ID FOREIGN KEY (Tipo_Produto_ID) REFERENCES Tipo_Produto(Tipo_Produto_ID)
-);
-
-
-CREATE TABLE Status_Arte(
-Status_Arte_ID INT IDENTITY (1,1) PRIMARY KEY,
-Nome NVARCHAR(100) NOT NULL
-);
-
-CREATE TABLE Arquivo_Arte(
-Arquivo_ID INT IDENTITY (1,1) PRIMARY KEY ,
-Item_ID INT NOT NULL,
-Nome_Arquivo NVARCHAR(100) NOT NULL,
-Caminho_Arquivo NVARCHAR (255) NOT NULL,
-Status_Arte_ID INT NOT NULL,
-CONSTRAINT FK_Arquivo_Arte_Item_ID FOREIGN KEY (Item_ID) REFERENCES Pedido_Item(Item_ID),
-CONSTRAINT FK_Arquivo_Arte_Status_Arte_ID FOREIGN KEY (Status_Arte_ID) REFERENCES Status_Arte(Status_Arte_ID)
-);
-
-
-CREATE TABLE Historico_Status(
-Historico_ID INT IDENTITY (1,1) PRIMARY KEY ,
-Pedido_ID INT NOT NULL,
-Status_ID INT NOT NULL,
-Data_Mudanca DATETIME DEFAULT GETDATE(),
-Usuario_ID INT NOT NULL,
-CONSTRAINT FK_Historico_Status_Pedido_ID FOREIGN KEY (Pedido_ID) REFERENCES Pedido(Pedido_ID),
-CONSTRAINT FK_Historico_Status_Status_ID FOREIGN KEY (Status_ID) REFERENCES Status_Producao(Status_ID),
-CONSTRAINT FK_Historico_StatusT_Usuario_ID FOREIGN KEY (Usuario_ID) REFERENCES Usuario(Usuario_ID)
-);
-
-CREATE TABLE Material(
-Material_ID INT IDENTITY (1,1) PRIMARY KEY,
-Nome NVARCHAR(50) NOT NULL,
-Descricao NVARCHAR(255),
-Ativo BIT NOT NULL DEFAULT 1
-);
-
-CREATE TABLE Tipo_Produto_Material(
-Tipo_Produto_ID INT NOT NULL,
-Material_ID INT NOT NULL ,
-CONSTRAINT PK_Tipo_Produto_Material PRIMARY KEY (Tipo_Produto_ID, Material_ID),
-CONSTRAINT FK_TPM_Tipo_Produto FOREIGN KEY (Tipo_Produto_ID) REFERENCES Tipo_Produto(Tipo_Produto_ID),
-CONSTRAINT FK_TPM_Material FOREIGN KEY (Material_ID) REFERENCES Material(Material_ID)
-);
-
-CREATE TABLE Custos_Fixos (
-    Custo_ID INT IDENTITY(1,1) PRIMARY KEY,
-    Descricao NVARCHAR(100) NOT NULL,
-    Valor DECIMAL(10,2) NOT NULL,
-    Data_Vencimento DATE NOT NULL,
-    Status_Pagamento BIT DEFAULT 0 -- 0: Pendente, 1: Pago
-);
-
-
-INSERT INTO Usuario (Nome, Funcao, Login, Senha) VALUES
-('Administrador', 'Gestão', 'admin', 'admin123'),
-('Jose Porcellani', 'Produção', 'jose', '123'),
-('Vendedor Teste', 'Comercial', 'venda', 'venda123'),
-('Designer Teste', 'Arte', 'arte', 'arte123');
-
--- 1. Ajustar Usuários para suportar os novos setores
--- Já incluímos: Admin, Vendedor, Arte, Impressao
-UPDATE Usuario SET Nivel_Acesso = 'Admin' WHERE Login = 'admin';
-UPDATE Usuario SET Nivel_Acesso = 'Arte' WHERE Login = 'arte';
-UPDATE Usuario SET Nivel_Acesso = 'Impressao' WHERE Login = 'jose';
-UPDATE Usuario SET Nivel_Acesso = 'Vendedor' WHERE Login = 'venda';
-
-
-INSERT INTO Status_Producao (Nome, Ordem)
-VALUES 
-('Pedido Criado', 1),
-('Aguardando Arte', 2),
-('Arte em Análise', 3),
-('Arte Aprovada', 4),
-('Em Producao', 5),
-('Finalizada', 6),
-('Entregue', 7),
-('Arquivado', 8),
-
-
-INSERT INTO Status_Arte (Nome)
-Values
-('Não Enviada'),
-('Enviada'),
-('Em Correção'),
-('Aprovada'),
-('Reprovada');
-
-INSERT INTO Categoria_Produtos (Nome, Descricao)
-VALUES
-('Adesivo', 'Produtos baseados em adesivo'),
-('Placas', 'Placas de sinalização e comunicação visual'),
-('Acrilico', 'Produtos fabricados em acrilico'),
-('Metal', 'Produtos fabricados em metal'),
-('UV','Produtos fabricados em impressão UV');
- 
-
-
-INSERT INTO Material (Nome, Descricao)
-VALUES 
-('Adesivo Vinil Fosco', 'Vinil fosco para impressão'), --ID 1
-('Adesivo Refletivo GTP Branco', 'Refletivo branco GTP'),--ID 2 
-('Adesivo GTP Amarelo', 'Refletivo amarelo GTP'),--ID 3 
-('Acrílico 2mm', 'Acrílico espessura 2mm'),--ID 4
-('Acrílico 3mm', 'Acrílico espessura 3mm'),--ID 5
-('Acrílico 6mm Branco', 'Acrílico branco 6mm'),--ID 6
-('Acrílico 6mm Cristal', 'Acrílico cristal 6mm'),--ID 7
-('Acrílico 6mm Preto', 'Acrílico preto 6mm'),--ID 8
-('Acrílico Espelhado Dourado 2mm', 'Acrílico espelhado dourado'),--ID 9
-('PVC 3mm', 'Placa em PVC expandido'),--ID 10
-('Aço Inox Escovado', 'Inox acabamento escovado'),--ID 11
-('Chapa Galvanizada', 'Chapa galvanizada'),--ID 12
-('Chapa 18', 'Chapa metálica nº 18'),--ID 13
-('ACM 3mm', 'Alumínio composto 3mm'),--ID 14
-('Alumínio', 'Chapa de alumínio'),--ID 15
-('Tubo 2"', 'Tubo metálico 2 polegadas'),--ID 16
-('Tubo 2.5"', 'Tubo metálico 2.5 polegadas');--ID 17
-
-
-
-INSERT INTO Tipo_Produto (Categoria_ID, Nome, Descricao_Tecnica, Usa_Adesivo, Usa_Mascara) VALUES 
-(1, 'Adesivo Vinil Impresso', 'Impressão digital em vinil fosco', 1, 0), -- ID 1
-(1, 'Adesivo Refletivo Impresso', 'Impressão digital em adesivo refletivo', 1, 0), -- ID 2
-(2, 'Placa ACM + Vinil Fosco', 'ACM com adesivação comum', 1, 0), -- ID 3
-(2, 'Placa ACM + Refletivo Branco', 'ACM com refletivo branco', 1, 0), -- ID 4
-(2, 'Placa ACM + Refletivo Amarelo', 'ACM com refletivo amarelo', 1, 0), -- ID 5
-(2, 'Placa Galvanizado + Vinil Fosco', 'Galvanizado com adesivação comum', 1, 0), -- ID 6
-(2, 'Placa Galvanizado + Refletivo Branco', 'Galvanizado com refletivo branco', 1, 0), -- ID 7
-(2, 'Placa Galvanizado + Refletivo Amarelo', 'Galvanizado com refletivo amarelo', 1, 0), --ID 8
-(2, 'Placa Chapa 18 + Vinil Fosco', 'Chapa 18 com adesivação comum', 1, 0), -- ID 9
-(2, 'Placa Chapa 18 + Refletivo Branco', 'Chapa 18 com refletivo branco', 1, 0), -- ID 10
-(2, 'Placa Chapa 18 + Refletivo Amarelo', 'Chapa 18 com refletivo amarelo', 1, 0),-- ID 11
-(2, 'Placa de Sinalização com Poste', 'Placa com tubo para fixação', 1, 0), -- ID 12
-(3, 'Acrílico Impressão UV', 'Impressão UV direta em acrilico', 0, 0), -- ID 13
-(3, 'Troféu de Acrílico', 'Acrílico recortado com impressão UV', 0, 0), -- ID 14
-(3, 'Acrílico com Sobreposição', 'Acrílico com camadas sobrepostas', 0, 0), -- ID 15
-(4, 'Alumínio Impressão UV', 'Impressão UV em chapa de alumínio', 0, 0), -- ID 16
-(4, 'Alumínio Adesivado', 'Alumínio com aplicação de adesivo', 1, 0), -- ID 17
-(4, 'Aço Inox Gravado', 'Gravação em baixo relevo em inox', 0, 1), -- ID 18
-(4, 'Aço Inox Impressão UV', 'Impressão UV direta em inox', 0, 0), -- ID 19
-(2, 'Placa PVC 3mm + Adesivo', 'PVC com aplicação de adesivo', 1, 0), -- ID 20
-(2, 'Placa PVC 3mm Impressão UV', 'Impressão direta no PVC', 0, 0), -- ID 21
-(2, 'Placa ACM + Poste 2" + Vinil Fosco', 'Placa Informativa', 1, 0), -- ID 22
-(2, 'Placa ACM + Poste 2,5" + Vinil Fosco', 'Placa Informativa', 1, 0), -- ID 23
-(2, 'Placa Galvanizada + Poste 2" + Vinil Fosco', 'Placa Informativa ', 1, 0), -- ID 24
-(2, 'Placa Galvanizada + Poste 2,5" + Vinil Fosco', 'Placa Informativa ', 1, 0), -- ID 25
-(2, 'Placa Chapa 18 + Poste 2" + Vinil Fosco', 'Placa Informativa ', 1, 0), -- ID 26
-(2, 'Placa Chapa 18 + Poste 2,5" + Vinil Fosco', 'Placa Informativa ', 1, 0), -- ID 27
-(2, 'Placa ACM + Poste 2" + Refletivo Branco', 'Sinalização padrão (Ex: Pare, Sentido Proibido)', 1, 0), -- ID 28
-(2, 'Placa ACM + Poste 2.5" + Refletivo Branco', 'Sinalização padrão (Ex: Pare, Sentido Proibido)', 1, 0), -- ID 29
-(2, 'Placa Galvanizada + Poste 2" + Refletivo Branco', 'Sinalização  branca', 1, 0), -- ID 30
-(2, 'Placa Galvanizada + Poste 2,5" + Refletivo Branco', 'Sinalização  branca', 1, 0), --ID 31
-(2, 'Placa Chapa 18 + Poste 2" + Refletivo Branco', 'Sinalização  branca', 1, 0), --ID 32
-(2, 'Placa Chapa 18+ Poste 2,5" + Refletivo Branco', 'Sinalização  branca', 1, 0), --ID 33
-(2, 'Placa ACM + Poste 2" + Refletivo Amarelo', 'Sinalização advertência (Ex: Curva, Pare à frente)', 1, 0),--ID 34
-(2, 'Placa ACM + Poste 2.5" + Refletivo Amarelo', 'Sinalização advertência (Ex: Curva, Pare à frente)', 1, 0),-- ID 35
-(2, 'Placa Galvanizada + Poste 2" + Refletivo Amarelo', 'Sinalização advertência ', 1, 0), -- ID 36
-(2, 'Placa Galvanizada + Poste 2,5" + Refletivo Amarelo', 'Sinalização advertência ', 1, 0), -- ID 37
-(2, 'Placa Chapa 18 + Poste 2" + Refletivo Amarelo', 'Sinalização advertência ', 1, 0), -- ID 38
-(2, 'Placa Chapa 18 + Poste 2,5" + Refletivo Amarelo', 'Sinalização advertência ', 1, 0); -- ID 39
-
-
--- VINCULANDO MATERIAIS AOS PRODUTOS (IDs seguindo a ordem de inserção acima)
-INSERT INTO Tipo_Produto_Material (Tipo_Produto_ID, Material_ID) VALUES
--- Adesivos e Placas Simples (IDs 1 a 21)
-(1, 1), (2, 2), (3, 14), (3, 1), (4, 14), (4, 2), (5, 14), (5, 3),
-(6, 12), (6, 1), (7, 12), (7, 2), (8, 12), (8, 3),
-(9, 13), (9, 1), (10, 13), (10, 2), (11, 13), (11, 3),
-(13, 5), (14, 6), (15, 4), (15, 9), (20, 10), (20, 1), (21, 10),
--- KITS CONDOMÍNIO (Vinil Fosco + Chapa + Tubo)
-(22, 14), (22, 1), (22, 16), -- ACM + Poste 2" + Fosco
-(23, 14), (23, 1), (23, 17), -- ACM + Poste 2.5" + Fosco
-(24, 12), (24, 1), (24, 16), -- Galva + Poste 2" + Fosco
-(25, 12), (25, 1), (25, 17), -- Galva + Poste 2.5" + Fosco
-(26, 13), (26, 1), (26, 16), -- Chapa 18 + Poste 2" + Fosco
-(27, 13), (27, 1), (27, 17), -- Chapa 18 + Poste 2.5" + Fosco
--- KITS TRÂNSITO BRANCO (Refletivo Branco + Chapa + Tubo)
-(28, 14), (28, 2), (28, 16), -- ACM + Poste 2" + Branco
-(29, 14), (29, 2), (29, 17), -- ACM + Poste 2.5" + Branco
-(30, 12), (30, 2), (30, 16), -- Galva + Poste 2" + Branco
-(31, 12), (31, 2), (31, 17), -- Galva + Poste 2.5" + Branco
-(32, 13), (32, 2), (32, 16), -- Chapa 18 + Poste 2" + Branco
-(33, 13), (33, 2), (33, 17), -- Chapa 18 + Poste 2.5" + Branco
--- KITS TRÂNSITO AMARELO (Refletivo Amarelo + Chapa + Tubo)
-(34, 14), (34, 3), (34, 16), -- ACM + Poste 2" + Amarelo
-(35, 14), (35, 3), (35, 17), -- ACM + Poste 2.5" + Amarelo
-(36, 12), (36, 3), (36, 16), -- Galva + Poste 2" + Amarelo
-(37, 12), (37, 3), (37, 17), -- Galva + Poste 2.5" + Amarelo
-(38, 13), (38, 3), (38, 16), -- Chapa 18 + Poste 2" + Amarelo
-(39, 13), (39, 3), (39, 17); -- Chapa 18 + Poste 2.5" + Amarelo
-
-
--- 4. CRIAÇÃO DAS VIEWS (GENTE QUE PRODUZ)
-CREATE OR ALTER VIEW VW_Fila_Arte AS 
-SELECT 
-    P.Os_Externa AS OS, 
-    C.Nome AS Cliente, 
-    TP.Nome AS Produto,
-    DATEDIFF(day, P.Data_Pedido, GETDATE()) AS Dias_Aguardando_Arte,
-    PI.Largura, PI.Altura, PI.Quantidade, 
-    PI.Observacao_Tecnica, 
-    P.Observacao_Geral,
-    ISNULL(SA.Nome, 'Pendente / Sem Arquivo') AS Status_Arte 
-FROM Pedido P
-JOIN Clientes C ON P.Cliente_ID = C.Cliente_id
-JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID
-JOIN Tipo_Produto TP ON PI.Tipo_Produto_ID = TP.Tipo_Produto_ID 
-LEFT JOIN Arquivo_Arte AA ON PI.Item_ID = AA.Item_ID -- LEFT JOIN não "esconde" o pedido
-LEFT JOIN Status_Arte SA ON AA.Status_Arte_ID = SA.Status_Arte_ID
-WHERE P.Status_ID IN (1, 2, 3); 
-
-CREATE OR ALTER VIEW VW_Fila_Arte_Finalista_Full AS
-SELECT 
-    P.OS_Externa AS OS,
-    C.Nome AS Cliente,
-    TP.Nome AS Produto,
-    PI.Largura, 
-    PI.Altura, 
-    PI.Quantidade,
-    PI.Observacao_Tecnica,
-    AA.Caminho_Arquivo AS Caminho_Arte,
-    SA.Nome AS Status_Arte,
-    -- Coluna para facilitar o filtro no seu front-end (Node.js)
-    CASE 
-        WHEN P.Status_ID = 8 THEN 'ARQUIVADOS/REPROVADOS'
-        ELSE 'FILA ATIVA'
-    END AS Setor_Fila
-FROM Pedido P
-JOIN Clientes C ON P.Cliente_ID = C.Cliente_id
-JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID
-JOIN Tipo_Produto TP ON PI.Tipo_Produto_ID = TP.Tipo_Produto_ID
-LEFT JOIN Arquivo_Arte AA ON PI.Item_ID = AA.Item_ID
-LEFT JOIN Status_Arte SA ON AA.Status_Arte_ID = SA.Status_Arte_ID;
-
-
--- VIEW: FILA DE IMPRESSÃO
-CREATE OR ALTER VIEW VW_Fila_Impressao AS 
-SELECT 
-    P.OS_Externa AS OS,
-    C.Nome AS Cliente,
-    TP.Nome AS Produto,
-    DATEDIFF(day, P.Data_Pedido, GETDATE()) AS Dias_em_Impressao,
-    (SELECT STRING_AGG(M.Nome, ' / ') FROM 
-    Tipo_Produto_Material TPM 
-    JOIN Material M  ON TPM.Material_ID = M.Material_ID
-    WHERE TPM.Tipo_Produto_ID = TP.Tipo_Produto_ID) AS Material_Base,
-    PI.Largura, PI.Altura, PI.Quantidade,
-    AA.Caminho_Arquivo AS Link_Arte,
-    P.Observacao_Geral,
-    PI.Observacao_Tecnica
-FROM Pedido P
-JOIN Clientes C ON P.Cliente_ID = C.Cliente_ID
-JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID 
-JOIN Tipo_Produto TP ON PI.Tipo_Produto_ID = TP.Tipo_Produto_ID
-JOIN Arquivo_Arte AA ON PI.Item_ID = AA.Item_ID
-WHERE P.Status_ID = 4;
-
--- 1. MONITORAMENTO GLOBAL: O "Onde está meu pedido?" (Visão para o Vendedor/Dono)
-CREATE VIEW VW_Monitoramento_Global AS 
-SELECT P.OS_Externa AS OS, C.Nome AS Cliente, TP.Nome AS Produto, SP.Nome AS Status_Producao, FORMAT(P.Data_Pedido, 'dd/MM/yyyy HH:mm') AS Data_Entrada
-FROM Pedido P
-JOIN Clientes C ON P.Cliente_ID = C.Cliente_id
-JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID
-JOIN Tipo_Produto TP ON PI.Tipo_Produto_ID = TP.Tipo_Produto_ID
-JOIN Status_Producao SP ON P.Status_ID = SP.Status_ID;
-
--- View de Produção com Foto e SLA (Tempo de produção)
-CREATE OR ALTER VIEW VW_Fila_Producao_Completa AS 
-SELECT 
-    P.OS_Externa AS OS, 
-    C.Nome AS Cliente, 
-    TP.Nome AS Produto,
-    PI.Largura, PI.Altura, PI.Quantidade, 
-    PI.Caminho_Foto, -- Nova coluna de foto
-    DATEDIFF(HOUR, P.Data_Pedido, GETDATE()) AS Horas_Desde_Abertura,
-    U.Nome AS Vendedor_Responsavel
-FROM Pedido P
-JOIN Clientes C ON P.Cliente_ID = C.Cliente_id
-JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID 
-JOIN Tipo_Produto TP ON PI.Tipo_Produto_ID = TP.Tipo_Produto_ID
-JOIN Usuario U ON P.Vendedor_ID = U.Usuario_ID
-WHERE P.Status_ID IN (4, 5);
-
-CREATE OR ALTER VIEW VW_Dashboard_Gestao_Ativa AS 
-SELECT 
-    SP.Nome AS Etapa,
-    COUNT(P.Pedido_ID) AS Total_Pedidos 
-FROM Status_Producao SP
-LEFT JOIN Pedido P ON SP.Status_ID = P.Status_ID
--- Filtro para remover os Arquivados da visão de gestão diária
-WHERE SP.Status_ID <> 8
-GROUP BY SP.Nome, SP.Ordem;
-
--- View para o Vendedor ver apenas os SEUS pedidos e o status deles
-CREATE OR ALTER VIEW VW_Meus_Pedidos_Vendedor AS
-SELECT 
-    P.Vendedor_ID, -- Usado para filtrar no App
-    P.OS_Externa,
-    C.Nome AS Cliente,
-    SP.Nome AS Status_Atual,
-    P.Valor_Total,
-    P.Data_Pedido
-FROM Pedido P
-JOIN Clientes C ON P.Cliente_ID = C.Cliente_id
-JOIN Status_Producao SP ON P.Status_ID = SP.Status_ID;
-
-CREATE OR ALTER VIEW VW_Pesquisa_Clientes_Vendas AS
-SELECT 
-    C.Cliente_id AS ID,
-    C.Nome,
-    ISNULL(PF.CPF, PJ.CNPJ) AS Documento,
-    CASE 
-        WHEN C.PF_ID IS NOT NULL THEN 'Pessoa Física'
-        WHEN C.PJ_ID IS NOT NULL THEN 'Pessoa Jurídica'
-    END AS Tipo_Cliente,
-    T.DDD + ' ' + T.Numero AS Telefone,
-    C.Email,
-    E.Cidade + ' - ' + E.Bairro AS Localidade,
-    C.Ativo
-FROM Clientes C
-LEFT JOIN Cliente_PF PF ON C.PF_ID = PF.Cliente_PF_ID
-LEFT JOIN Cliente_PJ PJ ON C.PJ_ID = PJ.Cliente_PJ_ID
-JOIN Telefone T ON C.Telefone_ID = T.Telefone_ID
-JOIN Endereco E ON C.Endereco_ID = E.Endereco_ID;
-
-
-
-CREATE OR ALTER VIEW VW_Historico_Pedidos_Cliente AS
-SELECT 
-    C.Nome AS Cliente,
-    P.OS_Externa AS OS,
-    P.Data_Pedido,
-    TP.Nome AS Produto,
-    PI.Largura,
-    PI.Altura,
-    PI.Quantidade,
-    S.Nome AS Status_Atual,
-    PI.Observacao_Tecnica
-FROM Pedido P
-JOIN Clientes C ON P.Cliente_ID = C.Cliente_id
-JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID
-JOIN Tipo_Produto TP ON PI.Tipo_Produto_ID = TP.Tipo_Produto_ID
-JOIN Status_Producao S ON P.Status_ID = S.Status_ID;
-
-
-CREATE OR ALTER VIEW VW_Busca_Rapida_Pedido AS
-SELECT
-P.OS_Externa AS OS,
-C.Nome AS Nome,
-P.Data_Pedido,
-SP.Nome AS Status_Atual,
-TP.Nome AS Produto,
-PI.Altura,
-PI.Largura,
-PI.Quantidade
-FROM Pedido P
-JOIN Clientes C ON P.Cliente_ID = C.Cliente_id
-JOIN Status_Producao SP ON P.Status_ID = SP.Status_ID
-JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID
-JOIN Tipo_Produto TP ON PI.Tipo_Produto_ID = TP.Tipo_Produto_ID;
-
-CREATE OR ALTER VIEW VW_Dashboard_Financeiro AS 
-SELECT 
-    P.OS_Externa AS OS,
-    C.Nome AS Cliente,
-    P.Valor_Total,
-    P.Forma_Pagamento,
-    FORMAT(P.Data_Pedido, 'dd/MM/yyyy HH:mm') AS Data_Venda,
-    SP.Nome AS Status_Atual
-FROM Pedido P
-JOIN Clientes C ON P.Cliente_ID = C.Cliente_id
-JOIN Status_Producao SP ON P.Status_ID = SP.Status_ID;
-
-
--- Nova VIEW para o Dashboard do Patrão (Lucro Líquido)
-CREATE OR ALTER VIEW VW_Dashboard_BI_Gerencial AS
-SELECT 
-    (SELECT ISNULL(SUM(Valor_Total), 0) FROM Pedido WHERE MONTH(Data_Pedido) = MONTH(GETDATE())) AS Total_Vendas_Mes,
-    (SELECT ISNULL(SUM(Valor), 0) FROM Custos_Fixos WHERE MONTH(Data_Vencimento) = MONTH(GETDATE())) AS Total_Custos_Mes,
-    ((SELECT ISNULL(SUM(Valor_Total), 0) FROM Pedido WHERE MONTH(Data_Pedido) = MONTH(GETDATE())) - 
-     (SELECT ISNULL(SUM(Valor), 0) FROM Custos_Fixos WHERE MONTH(Data_Vencimento) = MONTH(GETDATE()))) AS Lucro_Estimado;
-
--- View de Alerta de Atrasos para a Gestão
-CREATE OR ALTER VIEW VW_Alertas_SLA AS
-SELECT 
-    P.OS_Externa,
-    C.Nome AS Cliente,
-    SP.Nome AS Status_Atual,
-    DATEDIFF(HOUR, H.Data_Mudanca, GETDATE()) AS Horas_No_Status,
-    CASE 
-        WHEN SP.Status_ID IN (1,2,3) AND DATEDIFF(HOUR, H.Data_Mudanca, GETDATE()) > 24 THEN 'ATRASADO NA ARTE'
-        WHEN SP.Status_ID IN (4,5) AND DATEDIFF(HOUR, H.Data_Mudanca, GETDATE()) > 48 THEN 'ATRASADO NA PRODUÇÃO'
-        ELSE 'No Prazo'
-    END AS Alerta_Prazo
-FROM Pedido P
-JOIN Clientes C ON P.Cliente_ID = C.Cliente_id
-JOIN Status_Producao SP ON P.Status_ID = SP.Status_ID
-JOIN Historico_Status H ON P.Pedido_ID = H.Pedido_ID
-WHERE H.Historico_ID = (SELECT MAX(Historico_ID) FROM Historico_Status WHERE Pedido_ID = P.Pedido_ID);
-
-CREATE OR ALTER PROCEDURE SP_Validar_Login
-    @Login NVARCHAR(50),
-    @Senha NVARCHAR(255)
-AS
-BEGIN
-    SET NOCOUNT ON; -- Melhora a performance ao não retornar mensagens de "linhas afetadas"
-
-    -- Verifica se existe o par Login/Senha no banco
-    IF EXISTS (SELECT 1 FROM Usuario WHERE Login = @Login AND Senha = @Senha)
-    BEGIN
-        -- Se estiver tudo certo, o banco "entrega" os dados do funcionário para o sistema
-        SELECT 
-            Usuario_ID, 
-            Nome, 
-            Funcao 
-        FROM Usuario 
-        WHERE Login = @Login AND Senha = @Senha;
-    END
-    ELSE
-    BEGIN
-        -- Se o login ou a senha estiverem errados, o banco gera um erro para avisar a tela
-        RAISERROR('Usuário ou Senha inválidos. Tente novamente.', 16, 1);
-    END
-END
-
-CREATE OR ALTER PROCEDURE SP_Cadastrar_Cliente_Completo
-    @Nome NVARCHAR(50),
-    @Email NVARCHAR(100),
-    @DDD NVARCHAR(3),
-    @NumeroTelefone NVARCHAR(9),
-    @Cidade NVARCHAR(50),
-    @CEP NVARCHAR(8),
-    @Bairro NVARCHAR(60),
-    @Rua NVARCHAR(100),
-    @NumeroEndereco INT,
-    @Documento NVARCHAR(14), -- CPF ou CNPJ
-    @Tipo CHAR(2) -- 'PF' ou 'PJ'
-AS
-BEGIN
-    SET NOCOUNT ON;
-    
-    -- Iniciamos uma transação para garantir que ou salva TUDO ou NADA
-    BEGIN TRANSACTION;
-
-    BEGIN TRY
-        -- 1. Inserir o Endereço e capturar o ID
-        INSERT INTO Endereco (Cidade, CEP, Bairro, Rua, Numero)
-        VALUES (@Cidade, @CEP, @Bairro, @Rua, @NumeroEndereco);
-        DECLARE @EndID INT = SCOPE_IDENTITY();
-
-        -- 2. Inserir o Telefone e capturar o ID
-        INSERT INTO Telefone (DDD, Numero)
-        VALUES (@DDD, @NumeroTelefone);
-        DECLARE @TelID INT = SCOPE_IDENTITY();
-
-        -- 3. Lógica para PF ou PJ
-        DECLARE @PF_ID INT = NULL;
-        DECLARE @PJ_ID INT = NULL;
-
-        IF @Tipo = 'PF'
-        BEGIN
-            INSERT INTO Cliente_PF (CPF) VALUES (@Documento);
-            SET @PF_ID = SCOPE_IDENTITY();
-        END
-        ELSE IF @Tipo = 'PJ'
-        BEGIN
-            INSERT INTO Cliente_PJ (CNPJ) VALUES (@Documento);
-            SET @PJ_ID = SCOPE_IDENTITY();
-        END
-
-        -- 4. Inserir na tabela principal de Clientes vinculando os IDs anteriores
-        INSERT INTO Clientes (Endereco_ID, Telefone_ID, PF_ID, PJ_ID, Email, Nome)
-        VALUES (@EndID, @TelID, @PF_ID, @PJ_ID, @Email, @Nome);
-
-        -- Se chegou aqui sem erros, confirma a gravação
-        COMMIT TRANSACTION;
-        PRINT 'Cliente cadastrado com sucesso!';
-
-    END TRY
-    BEGIN CATCH
-        -- Se der qualquer erro (ex: CPF duplicado), desfaz tudo o que foi feito acima
-        ROLLBACK TRANSACTION;
-        
-        DECLARE @ErrorMessage NVARCHAR(4000) = ERROR_MESSAGE();
-        RAISERROR (@ErrorMessage, 16, 1);
-    END CATCH
-END
-
-
-CREATE OR ALTER PROCEDURE SP_Criar_Pedido_Com_Item
-    @Cliente_ID INT,
-    @OS_Externa NVARCHAR(6),
-    @Vendedor_ID INT, -- Novo parâmetro obrigatório
-    @Observacao_Geral NVARCHAR(255),
-    @Tipo_Produto_ID INT,
-    @Largura DECIMAL(10,2),
-    @Altura DECIMAL(10,2),
-    @Quantidade INT,
-    @Observacao_Tecnica NVARCHAR(255),
-    @Caminho_Foto NVARCHAR(255) = NULL -- Novo parâmetro opcional
-AS
-BEGIN
-    SET NOCOUNT ON;
-    BEGIN TRANSACTION;
-    BEGIN TRY
-        INSERT INTO Pedido (Cliente_ID, OS_Externa, Status_ID, Vendedor_ID, Observacao_Geral)
-        VALUES (@Cliente_ID, @OS_Externa, 1, @Vendedor_ID, @Observacao_Geral);
-        
-        DECLARE @NovoPedidoID INT = SCOPE_IDENTITY();
-
-        INSERT INTO Pedido_Item (Pedido_ID, Tipo_Produto_ID, Largura, Altura, Quantidade, Observacao_Tecnica, Caminho_Foto)
-        VALUES (@NovoPedidoID, @Tipo_Produto_ID, @Largura, @Altura, @Quantidade, @Observacao_Tecnica, @Caminho_Foto);
-
-        COMMIT TRANSACTION;
-    END TRY
-    BEGIN CATCH
-        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
-        THROW;
-    END CATCH
-END
-
-
-CREATE OR ALTER PROCEDURE SP_Atualizar_Status_Pedido
-   @Pedido_ID INT,
-   @Novo_Status_ID INT,
-   @Usuario_ID INT,
-   @Valor_Total DECIMAL(10,2) = NULL,   -- Novos campos opcionais
-   @Forma_Pagamento NVARCHAR(50) = NULL
-AS
-BEGIN
-    SET NOCOUNT ON;
-    BEGIN TRANSACTION;
-    BEGIN TRY
-        -- A TRAVA: Se tentar mudar para "Entregue" (7) sem dinheiro, o banco barra!
-        IF @Novo_Status_ID = 7 AND (@Valor_Total IS NULL OR @Valor_Total <= 0 OR @Forma_Pagamento IS NULL)
-        BEGIN
-            RAISERROR ('Erro Financeiro: Informe o Valor Total e a Forma de Pagamento para entregar o pedido.', 16, 1);
-            ROLLBACK TRANSACTION;
-            RETURN;
-        END
-
-        -- Atualiza o status e também os valores financeiros (se enviados)
-        UPDATE Pedido
-        SET Status_ID = @Novo_Status_ID,
-            Valor_Total = ISNULL(@Valor_Total, Valor_Total),
-            Forma_Pagamento = ISNULL(@Forma_Pagamento, Forma_Pagamento)
-        WHERE Pedido_ID = @Pedido_ID;
-   
-        COMMIT TRANSACTION;
-        PRINT 'Status e Financeiro atualizados com sucesso!';
-    END TRY
-    BEGIN CATCH
-        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
-        THROW;
-    END CATCH
-END
- 
-CREATE OR ALTER PROCEDURE SP_Vincular_Arquivo_Arte
-    @Item_ID INT,
-    @Nome_Arquivo NVARCHAR(100), -- Novo campo obrigatório
-    @Caminho_Arquivo NVARCHAR(255),
-    @Usuario_ID INT
-AS
-BEGIN
-    SET NOCOUNT ON;
-    BEGIN TRANSACTION;
-    BEGIN TRY 
-        IF EXISTS (SELECT 1 FROM Arquivo_Arte WHERE Item_ID = @Item_ID)
-        BEGIN
-            UPDATE Arquivo_Arte
-            SET Nome_Arquivo = @Nome_Arquivo,
-                Caminho_Arquivo = @Caminho_Arquivo,
-                Status_Arte_ID = 2 
-            WHERE Item_ID = @Item_ID;
-        END
-        ELSE
-        BEGIN
-            INSERT INTO Arquivo_Arte (Item_ID, Nome_Arquivo, Caminho_Arquivo, Status_Arte_ID)
-            VALUES (@Item_ID, @Nome_Arquivo, @Caminho_Arquivo, 2);
-        END
-        COMMIT TRANSACTION;
-    END TRY
-    BEGIN CATCH 
-        ROLLBACK TRANSACTION;
-        THROW;
-    END CATCH
-END
-  
-CREATE OR ALTER PROCEDURE SP_Cadastrar_Tipo_Produto_Completo
-    @Categoria_ID INT,
-    @Nome NVARCHAR(100),
-    @Descricao_Tecnica NVARCHAR(255),
-    @Usa_Adesivo BIT,
-    @Usa_Mascara BIT,
-    @Material_ID_1 INT,           -- Obrigatório
-    @Material_ID_2 INT = NULL,    -- Opcional
-    @Material_ID_3 INT = NULL     -- Opcional
-AS
-BEGIN
-    SET NOCOUNT ON;
-    BEGIN TRANSACTION;
-
-    BEGIN TRY
-        -- 1. Insere o Tipo de Produto
-        INSERT INTO Tipo_Produto (Categoria_ID, Nome, Descricao_Tecnica, Usa_Adesivo, Usa_Mascara)
-        VALUES (@Categoria_ID, @Nome, @Descricao_Tecnica, @Usa_Adesivo, @Usa_Mascara);
-
-        -- Captura o ID do produto que acabou de ser criado
-        DECLARE @NovoProdutoID INT = SCOPE_IDENTITY();
-
-        -- 2. Vincula o primeiro material (Sempre existe)
-        INSERT INTO Tipo_Produto_Material (Tipo_Produto_ID, Material_ID)
-        VALUES (@NovoProdutoID, @Material_ID_1);
-
-        -- 3. Vincula o segundo material (Se houver)
-        IF @Material_ID_2 IS NOT NULL
-        BEGIN
-            INSERT INTO Tipo_Produto_Material (Tipo_Produto_ID, Material_ID)
-            VALUES (@NovoProdutoID, @Material_ID_2);
-        END
-
-        -- 4. Vincula o terceiro material (Se houver)
-        IF @Material_ID_3 IS NOT NULL
-        BEGIN
-            INSERT INTO Tipo_Produto_Material (Tipo_Produto_ID, Material_ID)
-            VALUES (@NovoProdutoID, @Material_ID_3);
-        END
-
-        COMMIT TRANSACTION;
-        PRINT 'Produto e vínculos de materiais cadastrados com sucesso!';
-    END TRY
-    BEGIN CATCH
-        ROLLBACK TRANSACTION;
-        THROW;
-    END CATCH
-END
-
-CREATE OR ALTER TRIGGER TR_Gerar_Historico_Status
-ON Pedido
-AFTER UPDATE
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    -- Verifica se a coluna Status_ID foi realmente alterada
-    IF UPDATE(Status_ID)
-    BEGIN
-        INSERT INTO Historico_Status (Pedido_ID, Status_ID, Data_Mudanca, Usuario_ID)
-        SELECT 
-            i.Pedido_ID, 
-            i.Status_ID, 
-            GETDATE(), 
-            -- Aqui o sistema captura o ID do usuário que você passou na Procedure
-            -- Se por acaso não vier um ID, podemos definir um padrão (ex: 1 para Admin)
-            ISNULL(CAST(CONTEXT_INFO() AS INT), 1) 
-        FROM inserted i
-        JOIN deleted d ON i.Pedido_ID = d.Pedido_ID
-        WHERE i.Status_ID <> d.Status_ID; -- Só grava se o status for realmente diferente
-    END
-END
-
-CREATE OR ALTER TRIGGER TR_Validar_Dimensoes_Item
-ON Pedido_Item
-AFTER INSERT, UPDATE
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    -- Se houver qualquer item com Largura ou Altura menor ou igual a zero
-    IF EXISTS (
-        SELECT 1 
-        FROM inserted 
-        WHERE Largura <= 0 OR Altura <= 0
-    )
-    BEGIN
-        -- O SQL cancela a operação e envia um aviso claro para a tela
-        ROLLBACK TRANSACTION;
-        RAISERROR ('Erro de Segurança: Largura e Altura devem ser maiores que zero.', 16, 1);
-    END
-END
-
-CREATE OR ALTER TRIGGER TR_Proibir_Delete_Pedido
-ON Pedido
-FOR DELETE
-AS
-BEGIN
-    ROLLBACK TRANSACTION;
-    RAISERROR ('Erro: Não é permitido excluir pedidos. Altere o status se necessário.', 16, 1);
-END
-
-
-CREATE OR ALTER TRIGGER TR_Historico_Status_Insert
-ON Pedido
-AFTER INSERT
-AS
-BEGIN
-    INSERT INTO Historico_Status (Pedido_ID, Status_ID, Data_Mudanca, Usuario_ID)
-    SELECT Pedido_ID, Status_ID, GETDATE(), 1
-    FROM inserted;
-END
-
-
-CREATE OR ALTER TRIGGER TR_ArteReprovada_ArquivaPedido
-ON Arquivo_Arte
-AFTER UPDATE, INSERT
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    -- ID 5 = Reprovada (conforme seu INSERT na Status_Arte)
-    -- ID 8 = Arquivado (conforme seu INSERT na Status_Producao)
-    
-    IF EXISTS (SELECT 1 FROM inserted WHERE Status_Arte_ID = 5)
-    BEGIN
-        UPDATE P
-        SET P.Status_ID = 8
-        FROM Pedido P
-        INNER JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID
-        INNER JOIN inserted i ON PI.Item_ID = i.Item_ID
-        WHERE i.Status_Arte_ID = 5;
-        
-        PRINT 'Automação: Pedido arquivado porque a arte foi marcada como Reprovada.';
-    END
-END
-
-
