@@ -16,7 +16,7 @@ public partial class VwFilaProducaoCompleta
     public decimal Altura { get; set; }
     public int Quantidade { get; set; }
 
-    [Column("CaminhoFoto")]
+    [Column("Caminho_Foto")]
     public string? CaminhoFoto { get; set; }
 
     [Column("HorasDesdeAbertura")]

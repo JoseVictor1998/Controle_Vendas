@@ -333,6 +333,10 @@ INSERT INTO Tipo_Produto_Material (Tipo_Produto_ID, Material_ID) VALUES
 (39, 13), (39, 3), (39, 17); -- Chapa 18 + Poste 2.5" + Amarelo
 GO
 
+INSERT INTO Tipo_Produto_Material (Tipo_Produto_ID, Material_ID) VALUES
+(19, 11), -- Aço Inox UV -> Aço Inox Escovado
+(12, 12), (12, 16); -- Placa com Poste -> Chapa Galvanizada + Tubo 2
+
 -- 4. CRIAÇÃO DAS VIEWS (GENTE QUE PRODUZ)
 CREATE OR ALTER VIEW VW_Fila_Arte AS 
 SELECT 
@@ -381,16 +385,19 @@ GO
 -- VIEW: FILA DE IMPRESSÃO
 CREATE OR ALTER VIEW VW_Fila_Impressao AS 
 SELECT 
+    PI.Item_ID,
+    AA.Arquivo_ID,
     P.OS_Externa AS OS,
     C.Nome AS Cliente,
     TP.Nome AS Produto,
     DATEDIFF(day, P.Data_Pedido, GETDATE()) AS Dias_em_Impressao,
-    (SELECT STRING_AGG(M.Nome, ' / ') FROM 
-    Tipo_Produto_Material TPM 
-    JOIN Material M  ON TPM.Material_ID = M.Material_ID
-    WHERE TPM.Tipo_Produto_ID = TP.Tipo_Produto_ID) AS Material_Base,
+    -- Ajuste no Material: Se for nulo, avisa que está sem vínculo
+    ISNULL((SELECT STRING_AGG(M.Nome, ' / ') FROM 
+            Tipo_Produto_Material TPM 
+            JOIN Material M ON TPM.Material_ID = M.Material_ID
+            WHERE TPM.Tipo_Produto_ID = TP.Tipo_Produto_ID), 'Sem Material Definido') AS Material_Base,
     PI.Largura, PI.Altura, PI.Quantidade,
-    -- TRATAMENTO DE NULO AQUI: Se for nulo, retorna string vazia
+    PI.Caminho_Foto, -- 👈 FALTAVA ISSO: Para a foto aparecer na miniatura
     ISNULL(AA.Caminho_Arquivo, '') AS Link_Arte, 
     P.Observacao_Geral,
     PI.Observacao_Tecnica
@@ -401,6 +408,7 @@ JOIN Tipo_Produto TP ON PI.Tipo_Produto_ID = TP.Tipo_Produto_ID
 LEFT JOIN Arquivo_Arte AA ON PI.Item_ID = AA.Item_ID 
 WHERE P.Status_ID = 4;
 GO
+SELECT * FROM VW_Fila_Impressao;
 
 -- 1. MONITORAMENTO GLOBAL: O "Onde está meu pedido?" (Visão para o Vendedor/Dono)
 CREATE VIEW VW_Monitoramento_Global AS 
@@ -434,7 +442,7 @@ JOIN Clientes C ON P.Cliente_ID = C.Cliente_id
 JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID 
 JOIN Tipo_Produto TP ON PI.Tipo_Produto_ID = TP.Tipo_Produto_ID
 JOIN Usuario U ON P.Vendedor_ID = U.Usuario_ID
-WHERE P.Status_ID IN (4, 5);
+WHERE P.Status_ID IN (5);
 GO
 CREATE OR ALTER VIEW VW_Dashboard_Gestao_Ativa AS 
 SELECT 

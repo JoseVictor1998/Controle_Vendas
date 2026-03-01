@@ -621,7 +621,9 @@ public partial class ControleVendasContext : DbContext
             entity
                 .HasNoKey()
                 .ToView("VW_Fila_Impressao");
-
+            entity.Property(e => e.ItemId).HasColumnName("Item_ID");
+            entity.Property(e => e.CaminhoFoto).HasColumnName("Caminho_Foto");
+            entity.Property(e => e.ArquivoId).HasColumnName("Arquivo_ID");
             entity.Property(e => e.Altura).HasColumnType("decimal(10, 2)");
             entity.Property(e => e.Cliente).HasMaxLength(50);
             entity.Property(e => e.DiasEmImpressao).HasColumnName("Dias_em_Impressao");

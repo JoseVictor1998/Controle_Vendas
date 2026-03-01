@@ -640,32 +640,28 @@ namespace ComunicacaoVisual.API.Controllers
 
 
 
-        [Authorize(Roles = "God,Admin,Vendedor,Arte")]
+        [Authorize(Roles = "God,Admin,Arte")]
         [HttpPut("AtualizarStatusArte")]
         public async Task<IActionResult> AtualizarStatusArte([FromBody] AtualizarStatusArteInput model)
         {
             try
             {
-                // seta o usuário no contexto da sessão (para o trigger do histórico)
                 await _context.Database.ExecuteSqlInterpolatedAsync(
-                    $@"EXEC sp_set_session_context @key = N'UsuarioId', @value = {model.UsuarioId};"
-                );
+                    $@"EXEC sp_set_session_context @key = N'UsuarioId', @value = {model.UsuarioId};");
 
                 await _context.Database.ExecuteSqlInterpolatedAsync($@"
-            EXEC SP_Atualizar_Status_Arte
-                @Item_ID = {model.ItemId},
-                @Novo_Status_Arte_ID = {model.NovoStatusArteId},
-                @Usuario_ID = {model.UsuarioId};
-        ");
+            EXEC SP_Atualizar_Status_Arte 
+                @Item_ID = {model.ItemId}, 
+                @Novo_Status_Arte_ID = {model.NovoStatusArteId}, 
+                @Usuario_ID = {model.UsuarioId}");
 
-                return Ok(new { mensagem = "Status da arte atualizado com sucesso!" });
+                return Ok(new { mensagem = "Status da arte atualizado!" });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { erro = "Erro ao atualizar status da arte", detalhe = ex.Message });
+                return StatusCode(500, new { erro = "Erro no SQL da Arte", detalhe = ex.Message });
             }
         }
-
 
 
         [Authorize(Roles = "God,Admin,Producao,Impressao,Arte")]
@@ -680,7 +676,7 @@ namespace ComunicacaoVisual.API.Controllers
 
                 await _context.Database.ExecuteSqlInterpolatedAsync($@"
     EXEC SP_Atualizar_Status_Pedido 
-        @Pedido_ID = {model.PedidoId}, 
+        @Pedido_ID = {model.ItemId}, 
         @Novo_Status_ID = {model.NovoStatusId}, 
         @Usuario_ID = {model.UsuarioId}");
 
@@ -691,6 +687,7 @@ namespace ComunicacaoVisual.API.Controllers
                 return StatusCode(500, new { erro = "Erro ao mudar status", detalhe = ex.Message });
             }
         }
+
 
         [Authorize(Roles = "God,Admin,Arte")]
         [HttpPut("VincularArquivoArte")]
