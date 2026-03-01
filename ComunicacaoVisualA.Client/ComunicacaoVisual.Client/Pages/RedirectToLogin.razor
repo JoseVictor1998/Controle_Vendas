@@ -1,14 +1,14 @@
 ﻿@inject NavigationManager Nav
 
 @code {
-    protected override void OnInitialized()
+    protected override Task OnAfterRenderAsync(bool firstRender)
     {
-        var relative = Nav.ToBaseRelativePath(Nav.Uri);
+        if (!firstRender) return Task.CompletedTask;
 
-        // evita loop se já estiver no /login
-        if (!relative.StartsWith("login"))
-        {
+        var path = new Uri(Nav.Uri).AbsolutePath;
+        if (!path.Equals("/login", StringComparison.OrdinalIgnoreCase))
             Nav.NavigateTo("/login", replace: true);
-        }
+
+        return Task.CompletedTask;
     }
 }

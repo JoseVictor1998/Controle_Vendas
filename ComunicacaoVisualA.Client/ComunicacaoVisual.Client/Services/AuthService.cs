@@ -33,6 +33,10 @@ namespace ComunicacaoVisual.Client.Services
 
                 if (string.IsNullOrEmpty(token) || TokenExpirou(token))
                 {
+                    await _js.InvokeVoidAsync("localStorage.removeItem", "authToken");
+                    await _js.InvokeVoidAsync("localStorage.removeItem", "userName");
+                    await _js.InvokeVoidAsync("localStorage.removeItem", "userLevel");
+
                     return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
                 }
 
@@ -40,7 +44,7 @@ namespace ComunicacaoVisual.Client.Services
                 var claims = new List<Claim>
         {
             new Claim(ClaimTypes.Name, await _js.InvokeAsync<string>("localStorage.getItem", "userName") ?? "Usuário"),
-            new Claim(ClaimTypes.Role, nivel ?? "")
+            new Claim(ClaimTypes.Role, (nivel ?? "").Trim())
         };
 
                 var identity = new ClaimsIdentity(claims, "jwt");

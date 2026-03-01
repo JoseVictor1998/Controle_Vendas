@@ -1,7 +1,9 @@
-﻿using ComunicacaoVisual.API.DBModels;
+﻿using ComunicacaoVisual.API.Contracts;
+using ComunicacaoVisual.API.DBModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using System.Linq.Expressions;
 
 namespace ComunicacaoVisual.API.Controllers
@@ -11,10 +13,14 @@ namespace ComunicacaoVisual.API.Controllers
     public class ProducaoController : ControllerBase
     {
         private readonly ControleVendasContext _context;
+        private readonly IConfiguration _config;
 
-        public ProducaoController(ControleVendasContext context)
+        public ProducaoController(
+            ControleVendasContext context,
+            IConfiguration config) 
         {
             _context = context;
+            _config = config; 
         }
 
         [Authorize(Roles = "God,Admin,Vendedor")]
@@ -485,6 +491,8 @@ namespace ComunicacaoVisual.API.Controllers
 
         }
 
+
+
         [Authorize(Roles = "God")] 
         [HttpPost("CadastrarUsuario")]
        public async Task<IActionResult> CadastrarUsuario([FromBody] CadastrarUsuarioInput model)
@@ -532,6 +540,102 @@ namespace ComunicacaoVisual.API.Controllers
                 return StatusCode(500, new { erro = "Erro ao cadastrar cliente", detalhe = ex.Message });
             }
 
+        }
+
+        [Authorize(Roles = "God,Admin,Arte,Vendedor")]
+        [HttpGet("DownloadArte/{id:int}")]
+        public async Task<IActionResult> DownloadArte(int id)
+        {
+            var arte = await _context.ArquivoArtes.AsNoTracking()
+                .FirstOrDefaultAsync(x => x.ArquivoId == id);
+
+            if (arte == null) return NotFound();
+            if (string.IsNullOrWhiteSpace(arte.CaminhoFisico)) return NotFound(new { erro = "Sem caminho físico salvo." });
+            if (!System.IO.File.Exists(arte.CaminhoFisico)) return NotFound(new { erro = "Arquivo não encontrado no servidor." });
+
+            var contentType = string.IsNullOrWhiteSpace(arte.ContentType) ? "application/octet-stream" : arte.ContentType;
+            var bytes = await System.IO.File.ReadAllBytesAsync(arte.CaminhoFisico);
+
+            // baixa com o nome original
+            return File(bytes, contentType, arte.NomeArquivo);
+        }
+
+        [Authorize(Roles = "God,Admin,Arte,Vendedor")]
+        [HttpPost("UploadArte")]
+        [Consumes("multipart/form-data")]
+        [RequestSizeLimit(80 * 1024 * 1024)]
+        public async Task<IActionResult> UploadArte([FromForm] UploadArteRequest req)
+        {
+            if (req.ItemId <= 0) return BadRequest(new { erro = "Item inválido." });
+            if (req.File == null || req.File.Length == 0) return BadRequest(new { erro = "Arquivo inválido." });
+
+            var itemId = req.ItemId;
+            var file = req.File;
+
+            var ext = Path.GetExtension(file.FileName);
+            var permitidas = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".pdf", ".cdr", ".zip", ".png", ".jpg", ".jpeg" };
+            if (!permitidas.Contains(ext)) return BadRequest(new { erro = $"Extensão não permitida: {ext}" });
+
+            var root = _config["ArteStorage:RootPath"];
+            if (string.IsNullOrWhiteSpace(root))
+                return StatusCode(500, new { erro = "ArteStorage:RootPath não configurado." });
+
+            var pasta = Path.Combine(root, $"Item-{itemId}");
+            Directory.CreateDirectory(pasta);
+
+            var nomeOriginal = Path.GetFileName(file.FileName);
+            var nomeFinal = $"{itemId}_{DateTime.Now:yyyyMMdd_HHmmss}_{Guid.NewGuid():N}{ext}";
+            var caminhoFisico = Path.Combine(pasta, nomeFinal);
+
+            await using (var fs = System.IO.File.Create(caminhoFisico))
+                await file.CopyToAsync(fs);
+
+            const int STATUS_ENVIADA = 2;
+            const string PLACEHOLDER_URL = "/api/Producao/DownloadArte/0"; // ✅ nunca nulo
+
+            var existente = await _context.ArquivoArtes.FirstOrDefaultAsync(x => x.ItemId == itemId);
+
+            if (existente != null)
+            {
+                existente.NomeArquivo = nomeOriginal;
+                existente.CaminhoArquivo = PLACEHOLDER_URL;  // ✅ nunca nulo
+                existente.CaminhoFisico = caminhoFisico;
+                existente.StatusArteId = STATUS_ENVIADA;
+                existente.ContentType = file.ContentType;
+                existente.TamanhoBytes = file.Length;
+                existente.UsuarioUpload = User.Identity?.Name;
+                existente.DataUpload = DateTime.UtcNow;
+            }
+            else
+            {
+                existente = new ArquivoArte
+                {
+                    ItemId = itemId,
+                    NomeArquivo = nomeOriginal,
+                    CaminhoArquivo = PLACEHOLDER_URL,          // ✅ nunca nulo
+                    CaminhoFisico = caminhoFisico,
+                    StatusArteId = STATUS_ENVIADA,
+                    ContentType = file.ContentType,
+                    TamanhoBytes = file.Length,
+                    UsuarioUpload = User.Identity?.Name,
+                    DataUpload = DateTime.UtcNow
+                };
+                _context.ArquivoArtes.Add(existente);
+            }
+
+            await _context.SaveChangesAsync(); // ✅ agora passa
+
+            existente.CaminhoArquivo = $"/api/Producao/DownloadArte/{existente.ArquivoId}";
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                id = existente.ArquivoId,
+                itemId = existente.ItemId,
+                nomeArquivo = existente.NomeArquivo,
+                downloadUrl = existente.CaminhoArquivo,
+                statusArteId = existente.StatusArteId
+            });
         }
 
 

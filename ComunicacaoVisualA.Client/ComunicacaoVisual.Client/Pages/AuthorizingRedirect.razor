@@ -1,0 +1,15 @@
+﻿@inject NavigationManager Nav
+
+<p class="text-white p-4">Carregando dados do usuário...</p>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.Delay(800); // 0.8s (ajuste se quiser)
+
+        // se ainda não está no login, manda pro login
+        var path = new Uri(Nav.Uri).AbsolutePath;
+        if (!path.Equals("/login", StringComparison.OrdinalIgnoreCase))
+            Nav.NavigateTo("/login", replace: true);
+    }
+}

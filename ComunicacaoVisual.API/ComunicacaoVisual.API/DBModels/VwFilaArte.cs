@@ -5,6 +5,8 @@ namespace ComunicacaoVisual.API.DBModels;
 
 public partial class VwFilaArte
 {
+    public int ItemId { get; set; }
+    public int? ArquivoId { get; set; }
     public string Os { get; set; } = null!;
 
     public string Cliente { get; set; } = null!;

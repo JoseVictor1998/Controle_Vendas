@@ -1,5 +1,6 @@
-﻿using System.Net.Http.Headers;
-using Microsoft.JSInterop;
+﻿using Microsoft.JSInterop;
+using System.Net;
+using System.Net.Http.Headers;
 
 namespace ComunicacaoVisual.Client.Services;
 
@@ -7,10 +8,7 @@ public class AuthMessageHandler : DelegatingHandler
 {
     private readonly IJSRuntime _js;
 
-    public AuthMessageHandler(IJSRuntime js)
-    {
-        _js = js;
-    }
+    public AuthMessageHandler(IJSRuntime js) => _js = js;
 
     protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request,
@@ -21,6 +19,15 @@ public class AuthMessageHandler : DelegatingHandler
         if (!string.IsNullOrWhiteSpace(token))
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-        return await base.SendAsync(request, cancellationToken);
+        var response = await base.SendAsync(request, cancellationToken);
+
+        if (response.StatusCode == HttpStatusCode.Unauthorized)
+        {
+            await _js.InvokeVoidAsync("localStorage.removeItem", "authToken");
+            await _js.InvokeVoidAsync("localStorage.removeItem", "userName");
+            await _js.InvokeVoidAsync("localStorage.removeItem", "userLevel");
+        }
+
+        return response;
     }
 }

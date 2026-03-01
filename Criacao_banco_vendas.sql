@@ -118,6 +118,7 @@ Caminho_Foto NVARCHAR(255),
 CONSTRAINT FK_Pedido_Item_Pedido_ID FOREIGN KEY (Pedido_ID) REFERENCES Pedido(Pedido_ID),
 CONSTRAINT FK_Pedido_Item_Tipo_Produto_ID FOREIGN KEY (Tipo_Produto_ID) REFERENCES Tipo_Produto(Tipo_Produto_ID)
 );
+-- Troque o OS pela OS que você tentou aprovar (ex: '002 25')
 
 GO
 CREATE TABLE Status_Arte(
@@ -129,13 +130,27 @@ CREATE TABLE Arquivo_Arte(
 Arquivo_ID INT IDENTITY (1,1) PRIMARY KEY ,
 Item_ID INT NOT NULL,
 Nome_Arquivo NVARCHAR(100) NOT NULL,
-Caminho_Arquivo NVARCHAR (255) NOT NULL,
+Caminho_Arquivo NVARCHAR (500) NOT NULL,
 Status_Arte_ID INT NOT NULL,
 CONSTRAINT FK_Arquivo_Arte_Item_ID FOREIGN KEY (Item_ID) REFERENCES Pedido_Item(Item_ID),
 CONSTRAINT FK_Arquivo_Arte_Status_Arte_ID FOREIGN KEY (Status_Arte_ID) REFERENCES Status_Arte(Status_Arte_ID)
 );
-
 GO
+ALTER TABLE Arquivo_Arte
+ADD
+    Caminho_Fisico NVARCHAR(500) NULL,      -- caminho real no servidor (UNC ou D:\...)
+    ContentType NVARCHAR(100) NULL,
+    TamanhoBytes BIGINT NULL,
+    DataUpload DATETIME2 NOT NULL CONSTRAINT DF_Arquivo_Arte_DataUpload DEFAULT SYSDATETIME(),
+    UsuarioUpload NVARCHAR(100) NULL;
+GO
+
+ALTER TABLE dbo.Arquivo_Arte 
+ADD CONSTRAINT DF_Arquivo_Arte_CaminhoArquivo 
+DEFAULT ('/api/Producao/DownloadArte/temp') FOR Caminho_Arquivo;
+GO
+SELECT * FROM Pedido;
+
 CREATE TABLE Historico_Status(
 Historico_ID INT IDENTITY (1,1) PRIMARY KEY ,
 Pedido_ID INT NOT NULL,
@@ -321,6 +336,8 @@ GO
 -- 4. CRIAÇÃO DAS VIEWS (GENTE QUE PRODUZ)
 CREATE OR ALTER VIEW VW_Fila_Arte AS 
 SELECT 
+    PI.Item_ID, -- 👈 OBRIGATÓRIO: Sem isso, o Blazor envia ID 0
+    AA.Arquivo_ID, -- 👈 OBRIGATÓRIO: Para o botão "Baixar" funcionar
     P.Os_Externa AS OS, 
     C.Nome AS Cliente, 
     TP.Nome AS Produto,
@@ -333,11 +350,10 @@ FROM Pedido P
 JOIN Clientes C ON P.Cliente_ID = C.Cliente_id
 JOIN Pedido_Item PI ON P.Pedido_ID = PI.Pedido_ID
 JOIN Tipo_Produto TP ON PI.Tipo_Produto_ID = TP.Tipo_Produto_ID 
-LEFT JOIN Arquivo_Arte AA ON PI.Item_ID = AA.Item_ID -- LEFT JOIN não "esconde" o pedido
+LEFT JOIN Arquivo_Arte AA ON PI.Item_ID = AA.Item_ID 
 LEFT JOIN Status_Arte SA ON AA.Status_Arte_ID = SA.Status_Arte_ID
 WHERE P.Status_ID IN (1, 2, 3); 
 GO
-
 CREATE OR ALTER VIEW VW_Fila_Arte_Finalista_Full AS
 SELECT 
     P.OS_Externa AS OS,

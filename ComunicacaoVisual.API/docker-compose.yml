@@ -29,15 +29,17 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=Controle_Vendas;User Id=sa;Password=Sql#2026!erp;TrustServerCertificate=True;
       - Jwt__Key=8jU4Cm8P653gAYuvU5p1_Segredo2026_Longa
+      - ArteStorage__RootPath=/data/artes
     volumes:
       - uploads_data:/app/wwwroot/uploads
+      - "C:/ERP/Artes:/data/artes"   
     networks:
       - erp-network
 
 volumes:
   sqlserver_data:
   uploads_data:
-
+  
 networks:
   erp-network:
     driver: bridge

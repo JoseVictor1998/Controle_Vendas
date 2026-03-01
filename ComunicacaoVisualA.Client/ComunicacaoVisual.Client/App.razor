@@ -1,17 +1,45 @@
-﻿<CascadingAuthenticationState>
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@using ComunicacaoVisual.Client.Pages
+
+<CascadingAuthenticationState>
     <Router AppAssembly="@typeof(App).Assembly">
         <Found Context="routeData">
-            <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
-                <NotAuthorized>
-                    @* Se cair aqui, pelo menos a tela não fica branca *@
-                    <h1 class="text-white p-4">Acesso Negado</h1>
-                </NotAuthorized>
-            </AuthorizeRouteView>
+
+            
+            @if (routeData.PageType == typeof(Login))
+            {
+                <RouteView RouteData="@routeData" DefaultLayout="@typeof(EmptyLayout)" />
+            }
+            else
+            {
+                <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
+                    <NotAuthorized Context="authState">
+                        @if (authState?.User?.Identity?.IsAuthenticated == true)
+                        {
+                            <LayoutView Layout="@typeof(MainLayout)">
+                                <h1 class="text-white p-4">Acesso Negado</h1>
+                            </LayoutView>
+                        }
+                        else
+                        {
+                            <RedirectToLogin />
+                        }
+                    </NotAuthorized>
+
+                    <Authorizing>
+                        <LayoutView Layout="@typeof(MainLayout)">
+                            <AuthorizingRedirect />
+                        </LayoutView>
+                    </Authorizing>
+                </AuthorizeRouteView>
+            }
+
             <FocusOnNavigate RouteData="@routeData" Selector="h1" />
         </Found>
+
         <NotFound>
             <LayoutView Layout="@typeof(MainLayout)">
-                <p class="text-white">Página não encontrada.</p>
+                <p class="text-white p-4">Página não encontrada.</p>
             </LayoutView>
         </NotFound>
     </Router>

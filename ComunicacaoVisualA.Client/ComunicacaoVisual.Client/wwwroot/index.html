@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -15,15 +14,67 @@
     <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png" />
     <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png" />
     <script type="importmap"></script>
-</head>
 
+    <style>
+        html, body {
+            margin: 0;
+            height: 100%;
+            background: #0f172a;
+        }
+
+        #app {
+            min-height: 100vh;
+            background: #0f172a;
+        }
+
+        .boot-cover {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #0f172a;
+            color: #f8fafc;
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        }
+
+        .boot-loader {
+            text-align: center;
+        }
+
+        .boot-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #334155;
+            border-top: 5px solid #009b3a;
+            border-radius: 50%;
+            animation: bootspin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        .boot-text {
+            margin-top: 18px;
+            color: #94a3b8;
+        }
+
+        @keyframes bootspin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
 <body>
     <div id="app">
-        <svg class="loading-progress">
-            <circle r="40%" cx="50%" cy="50%" />
-            <circle r="40%" cx="50%" cy="50%" />
-        </svg>
-        <div class="loading-progress-text"></div>
+        <div class="boot-cover">
+            <div class="boot-loader">
+                <div class="boot-spinner"></div>
+                <div class="boot-text">Carregando sistema...</div>
+            </div>
+        </div>
     </div>
 
     <div id="blazor-error-ui">
@@ -31,8 +82,23 @@
         <a href="." class="reload">Reload</a>
         <span class="dismiss">🗙</span>
     </div>
+
     <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
+
+    <script>
+        window.downloadFileFromStream = async (fileName, contentStreamReference) => {
+            const arrayBuffer = await contentStreamReference.arrayBuffer();
+            const blob = new Blob([arrayBuffer]);
+            const url = URL.createObjectURL(blob);
+            const anchorElement = document.createElement('a');
+            anchorElement.href = url;
+            anchorElement.download = fileName ?? '';
+            anchorElement.click();
+            anchorElement.remove();
+            URL.revokeObjectURL(url);
+        }
+    </script>
+
     <script>navigator.serviceWorker.register('service-worker.js', { updateViaCache: 'none' });</script>
 </body>
-
 </html>

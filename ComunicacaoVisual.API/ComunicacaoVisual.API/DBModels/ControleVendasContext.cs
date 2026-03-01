@@ -88,14 +88,38 @@ public partial class ControleVendasContext : DbContext
             entity.ToTable("Arquivo_Arte", tb => tb.HasTrigger("TR_ArteReprovada_ArquivaPedido"));
 
             entity.Property(e => e.ArquivoId).HasColumnName("Arquivo_ID");
-            entity.Property(e => e.CaminhoArquivo)
-                .HasMaxLength(255)
-                .HasColumnName("Caminho_Arquivo");
+
             entity.Property(e => e.ItemId).HasColumnName("Item_ID");
+
             entity.Property(e => e.NomeArquivo)
                 .HasMaxLength(100)
                 .HasColumnName("Nome_Arquivo");
+
+            // ✅ deixa só esse (500)
+            entity.Property(e => e.CaminhoArquivo)
+                .HasMaxLength(500)
+                .HasColumnName("Caminho_Arquivo")
+                .IsRequired();
             entity.Property(e => e.StatusArteId).HasColumnName("Status_Arte_ID");
+
+            // ✅ novos campos
+            entity.Property(e => e.CaminhoFisico)
+                .HasMaxLength(500)
+                .HasColumnName("Caminho_Fisico");
+
+            entity.Property(e => e.ContentType)
+                .HasMaxLength(100)
+                .HasColumnName("ContentType");
+
+            entity.Property(e => e.TamanhoBytes)
+                .HasColumnName("TamanhoBytes");
+
+            entity.Property(e => e.DataUpload)
+                .HasColumnName("DataUpload");
+
+            entity.Property(e => e.UsuarioUpload)
+                .HasMaxLength(100)
+                .HasColumnName("UsuarioUpload");
 
             entity.HasOne(d => d.Item).WithMany(p => p.ArquivoArtes)
                 .HasForeignKey(d => d.ItemId)
@@ -542,6 +566,8 @@ public partial class ControleVendasContext : DbContext
             entity
                 .HasNoKey()
                 .ToView("VW_Fila_Arte");
+            entity.Property(e => e.ItemId).HasColumnName("Item_ID");
+            entity.Property(e => e.ArquivoId).HasColumnName("Arquivo_ID");
 
             entity.Property(e => e.Altura).HasColumnType("decimal(10, 2)");
             entity.Property(e => e.Cliente).HasMaxLength(50);

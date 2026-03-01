@@ -6,6 +6,7 @@
     <nav class="flex-column">
         
         @* PAINEL GERAL: Visível para todos os níveis de acesso *@
+        @attribute [Authorize]
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
                 <span class="oi oi-home" aria-hidden="true"></span> Home

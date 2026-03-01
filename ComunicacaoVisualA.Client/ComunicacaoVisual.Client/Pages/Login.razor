@@ -1,38 +1,97 @@
 ﻿@page "/login"
+@layout EmptyLayout
 @using ComunicacaoVisual.Client.Models
 @using ComunicacaoVisual.Client.Services
 @inject HttpClient Http
 @inject AuthService AuthService
 @inject NavigationManager Nav
 
-<div class="container mt-5" style="max-width: 400px;">
-    <div class="card shadow border-0">
-        <div class="card-body p-4 text-center">
-            
-            <i class="bi bi-cpu-fill mb-3" style="font-size: 2.5rem; color: #0d6efd;"></i>
-            
-            <h3 class="mb-1 fw-bold">Portal Operacional</h3>
-            <p class="text-muted mb-4">Comunicação Visual - Gestão de Produção</p>
-            
-            <div class="mb-3 text-start">
-                <label class="form-label fw-bold">Identificação</label>
-                <input @bind="userLogin" class="form-control" placeholder="Digite seu usuário..." />
-            </div>
+<style>
+    body {
+        background-color: #0f172a !important;
+    }
 
-            <div class="mb-3 text-start">
-                <label class="form-label fw-bold">Senha de Acesso</label>
-                <input @bind="userSenha" type="password" class="form-control" placeholder="••••••••" />
-            </div>
+    .login-wrapper {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #0f172a;
+    }
 
-            <button class="btn btn-primary w-100 py-2 fw-bold" @onclick="TentarLogar">
-                INICIAR TURNO
-            </button>
+    .login-card {
+        background-color: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 16px;
+        padding: 2rem;
+        width: 100%;
+        max-width: 420px;
+        color: #f8fafc;
+        box-shadow: 0 0 40px rgba(0,0,0,0.4);
+    }
 
-            @if (!string.IsNullOrEmpty(feedback))
-            {
-                <div class="alert alert-info mt-3 small">@feedback</div>
-            }
+    .login-input {
+        background-color: #0f172a;
+        border: 1px solid #475569;
+        color: white;
+    }
+
+        .login-input:focus {
+            background-color: #0f172a;
+            color: white;
+            border-color: #009b3a;
+            box-shadow: 0 0 0 0.2rem rgba(0, 155, 58, 0.25);
+        }
+
+        .login-input::placeholder {
+            color: #94a3b8;
+        }
+
+    .login-btn {
+        background-color: #009b3a;
+        border: none;
+        font-weight: 600;
+    }
+
+        .login-btn:hover {
+            background-color: #00b340;
+        }
+
+    .login-muted {
+        color: #94a3b8;
+    }
+</style>
+
+<div class="login-wrapper">
+    <div class="login-card text-center">
+
+        <i class="bi bi-cpu-fill mb-3" style="font-size: 2.5rem; color: #009b3a;"></i>
+
+        <h3 class="mb-1 fw-bold">Portal Operacional</h3>
+        <p class="login-muted mb-4">
+            Comunicação Visual - Gestão de Produção
+        </p>
+
+        <div class="mb-3 text-start">
+            <label class="form-label fw-bold">Identificação</label>
+            <input @bind="userLogin" class="form-control login-input" placeholder="Digite seu usuário..." />
         </div>
+
+        <div class="mb-3 text-start">
+            <label class="form-label fw-bold">Senha de Acesso</label>
+            <input @bind="userSenha" type="password" class="form-control login-input" placeholder="••••••••" />
+        </div>
+
+        <button class="btn login-btn w-100 py-2 text-white"
+                @onclick="TentarLogar">
+            INICIAR TURNO
+        </button>
+
+        @if (!string.IsNullOrEmpty(feedback))
+        {
+            <div class="alert alert-info mt-3 small">@feedback</div>
+        }
+
     </div>
 </div>
 

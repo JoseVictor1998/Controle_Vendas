@@ -64,6 +64,8 @@ builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "ComunicacaoVisual API", Version = "v1" });
 
+    c.OperationFilter<ComunicacaoVisual.API.Models.SwaggerFileUploadFilter>();
+
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Description = "JWT Authorization header usando o esquema Bearer. Exemplo: \"Bearer {token}\"",

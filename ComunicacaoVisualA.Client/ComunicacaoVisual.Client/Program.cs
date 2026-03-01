@@ -8,29 +8,29 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
+
+// Services
 builder.Services.AddScoped<PedidoService>();
-// Adicione esta linha no seu Program.cs
 builder.Services.AddScoped<FilaProducaoService>();
 builder.Services.AddScoped<ClienteService>();
-// HttpClient apontando para sua API
-// registra o handler
-builder.Services.AddScoped<AuthMessageHandler>();
+builder.Services.AddScoped<FilaArteService>();
 
-builder.Services.AddScoped(sp =>
-{
-    var handler = sp.GetRequiredService<AuthMessageHandler>();
-    handler.InnerHandler = new HttpClientHandler();
-
-    return new HttpClient(handler)
-    {
-        BaseAddress = new Uri("http://localhost:5001/")
-    };
-});
+// Auth
 builder.Services.AddAuthorizationCore();
 builder.Services.AddCascadingAuthenticationState();
 
-// AuthService como AuthenticationStateProvider
 builder.Services.AddScoped<AuthService>();
-builder.Services.AddScoped<AuthenticationStateProvider, AuthService>();
+builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<AuthService>());
+
+// HttpClient + Handler (do jeito certo)
+builder.Services.AddScoped<AuthMessageHandler>();
+
+builder.Services.AddHttpClient("API", client =>
+{
+    client.BaseAddress = new Uri("http://localhost:5001/");
+})
+.AddHttpMessageHandler<AuthMessageHandler>();
+
+builder.Services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>().CreateClient("API"));
 
 await builder.Build().RunAsync();
