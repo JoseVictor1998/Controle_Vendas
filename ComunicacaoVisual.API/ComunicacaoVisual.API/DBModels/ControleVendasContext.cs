@@ -582,6 +582,8 @@ public partial class ControleVendasContext : DbContext
             entity.Property(e => e.Os)
                 .HasMaxLength(6)
                 .HasColumnName("OS");
+            entity.Property(e => e.Caminho_Foto)
+          .HasColumnName("Caminho_Foto");
             entity.Property(e => e.Produto).HasMaxLength(100);
             entity.Property(e => e.StatusArte)
                 .HasMaxLength(100)
@@ -650,6 +652,7 @@ public partial class ControleVendasContext : DbContext
         {
             entity.HasNoKey();
             entity.ToView("VW_Fila_Producao_Completa");
+            entity.Property(e => e.ItemId).HasColumnName("ItemId");
 
             entity.Property(e => e.Os).HasColumnName("Os");
             entity.Property(e => e.Cliente).HasColumnName("Cliente");

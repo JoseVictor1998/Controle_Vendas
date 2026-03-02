@@ -16,6 +16,9 @@ namespace ComunicacaoVisual.Client.Models
         [JsonPropertyName("cliente")]
         public string Cliente { get; set; } = "";
 
+        [JsonPropertyName("caminhoFoto")]
+        public string? CaminhoFoto { get; set; }
+
         [JsonPropertyName("produto")]
         public string Produto { get; set; } = "";
 

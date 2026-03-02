@@ -2,6 +2,7 @@
 {
     public class VwHistoricoPedidosClienteModel
     {
+        public int ItemId { get; set; }
         public string Cliente { get; set; } = string.Empty;
 
         public string Os { get; set; } = string.Empty;

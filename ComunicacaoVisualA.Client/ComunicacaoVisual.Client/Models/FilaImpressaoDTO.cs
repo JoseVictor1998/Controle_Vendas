@@ -25,7 +25,7 @@ public class FilaImpressaoDTO
 
     
     [JsonPropertyName("caminhoFoto")]
-    public string? Caminho_Foto { get; set; }
+    public string? CaminhoFoto { get; set; }
 
     [JsonPropertyName("largura")]
     public decimal Largura { get; set; }

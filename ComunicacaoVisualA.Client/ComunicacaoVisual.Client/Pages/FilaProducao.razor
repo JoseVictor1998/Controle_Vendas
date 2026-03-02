@@ -3,6 +3,9 @@
 @using ComunicacaoVisual.Client.Models
 @using ComunicacaoVisual.Client.Services
 @attribute [Authorize(Roles = "God,Admin,Producao")]
+@inject HttpClient Http
+@using System.Net.Http
+@using System.Net.Http.Headers
 
 @inject FilaProducaoService Service
 @inject IJSRuntime JS
@@ -20,7 +23,10 @@
     .custom-table thead th { color: #94a3b8; text-transform: uppercase; font-size: 0.75rem; padding: 1rem; border: none; }
     
     .row-base { background-color: #1e293b; transition: all 0.2s; border-radius: 8px; }
-    .row-base:hover { background-color: #334155; transform: scale(1.005); }
+    .row-base:hover {
+        position: relative; /* Necessário para o z-index funcionar em  */
+        z-index: 100;        /* Coloca a linha atual e seu conteúdo no topo da pilha */
+    }
     
     /* ALERTA DE ATRASO (>= 5 dias) */
 .row-delayed { background-color: rgba(127, 29, 29, 0.3) !important; border-left: 4px solid #ef4444; }
@@ -36,12 +42,50 @@
 
     /* TOOLTIP INTERATIVO */
     .obs-box { cursor: help; position: relative; display: inline-block; }
-    .obs-content { 
-        display: none; position: absolute; z-index: 50; background: #0f172a; border: 1px solid #334155;
-        padding: 1rem; border-radius: 0.5rem; width: 300px; box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.5);
-        color: #f8fafc; text-align: left;
+
+.obs-content { 
+        display: none; 
+        position: absolute; 
+        z-index: 99999 !important; /* Continua sendo o mais alto dentro da linha */
+        
+        /* 🚀 FUNDO 100% SÓLIDO: Não deixa nada de trás aparecer */
+        background-color: #1e293b !important; 
+        opacity: 1 !important; 
+        
+        border: 1px solid #fedf00; 
+        padding: 1rem; 
+        border-radius: 0.5rem; 
+        width: 320px; 
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9); 
+        top: 25px; 
+        left: 0;
     }
-    .obs-box:hover .obs-content { display: block; }
+
+    /* 🚀 O SEGREDO: Quando você passa o mouse, o "pai" da caixa também sobe na pilha */
+    .obs-box:hover {
+        z-index: 10000;
+        position: relative;
+    }
+
+    .obs-box:hover .obs-content { 
+        display: block; 
+    }
+.foto-miniatura {
+        width: 50px; 
+        height: 50px; 
+        object-fit: cover; 
+        border-radius: 8px; 
+        border: 1px solid #334155;
+        transition: transform 0.3s ease; /* Animação suave */
+        cursor: zoom-in;
+    }
+
+    .foto-miniatura:hover {
+        transform: scale(4); /* Aumenta 4x o tamanho */
+        z-index: 10000; /* Garante que fique acima das outras linhas */
+        position: relative;
+        box-shadow: 0 0 20px rgba(0,0,0,0.8);
+    }
 </style>
 
 <div class="page-container">
@@ -59,97 +103,105 @@
     </div>
 
     <table class="custom-table">
-        <thead>
-            <tr>
-                <th>Foto</th>
-                <th>Tempo</th>
-                <th>OS</th>
-                <th>Produto / Cliente</th>
-                <th>Material</th>
-                <th>Dimensões</th>
-                <th>Vendedor</th>
-                <th>Ações</th>
-            </tr>
-        </thead>
-        <tbody>
-            @if (lista == null)
-
+    <thead>
+        <tr>
+            <th>Foto</th>
+            <th>Tempo</th>
+            <th>OS</th>
+            <th>Produto / Cliente</th>
+            <th>Material</th>
+            <th>Dimensões</th>
+            <th>Vendedor</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (lista == null)
+        {
+            <tr><td colspan="8" class="text-center p-5">Sincronizando banco de dados...</td></tr>
+        }
+        else if (lista.Count == 0)
+        {
+            <tr><td colspan="8" class="text-center p-5 text-muted">Nenhum pedido na fila de produção.</td></tr>
+        }
+        else
+        {
+            @foreach (var item in lista)
             {
-                <tr><td colspan="8" class="text-center p-5">Sincronizando banco de dados...</td></tr>
+                var horas = item.HorasDesdeAbertura ?? 0;
+                var dias = (int)Math.Floor(horas / 24.0);
+                bool atrasado = dias >= 5;
+
+                <tr class="row-base @(atrasado ? "row-delayed" : "")">
+                    @* 🚀 COLUNA DA FOTO CORRIGIDA (Usando 'p' para combinar com seu loop) *@
+@* 🚀 Use 'item' se for esse o nome no seu @foreach da Fila de Produção *@
+<td style="width: 80px; padding: 1rem;">
+    @if (!string.IsNullOrEmpty(item.CaminhoFoto))
+    {
+        var linkFinal = item.CaminhoFoto.Contains("http") 
+                        ? item.CaminhoFoto 
+                        : $"{Http.BaseAddress}{item.CaminhoFoto.TrimStart('/')}";
+
+        <img src="@($"{linkFinal}?t={DateTime.Now.Ticks}")" 
+             class="foto-miniatura" 
+             alt="Miniatura" />
+    }
+    else
+    {
+        <div style="width: 50px; height: 50px; background: #1e293b; display: flex; align-items: center; justify-content: center; border-radius: 8px;">
+            <i class="oi oi-image" style="color: #475569;"></i>
+        </div>
+    }
+</td>
+
+                    <td style="padding: 1rem;">
+                        <div class="flex items-center gap-2 @(atrasado ? "text-delayed" : "")" style="color: #fedf00;">
+                            <i class="oi oi-timer"></i>
+                            @(dias == 0 ? "Novo" : $"{dias}d")
+                            <small style="color: #94a3b8; margin-left: 6px;">(@(horas)h)</small>
+                        </div>
+                    </td>
+
+                    <td style="font-weight: 700;">@item.OS</td>
+
+                    <td>
+                        <div class="obs-box">
+                            <span style="font-weight: 600;">@item.Produto</span>
+                            @* 🚀 TOOLTIP: O fundo sólido impede que as letras se misturem *@
+                            <div class="obs-content">
+                                <strong style="color: #fedf00;">📋 Obs. Geral:</strong><br/>
+                                <span>@(item.ObservacaoGeral ?? "-")</span><br/><br/>
+                                <strong style="color: #f87171;">🛠 Obs. Técnica:</strong><br/>
+                                <span>@(item.ObservacaoTecnica ?? "-")</span>
+                            </div>
+                        </div><br/>
+                        <small style="color: #94a3b8;">@item.Cliente</small>
+                    </td>
+
+                    <td><span class="material-pill">@(item.MaterialBase ?? "N/A")</span></td>
+
+                    <td>
+                        <span>@item.Largura.ToString("N2") x @item.Altura.ToString("N2")</span><br/>
+                        <small style="color: #94a3b8;">Qtd: @item.Quantidade</small>
+                    </td>
+
+                    <td>
+                        <span class="badge bg-dark" style="border: 1px solid #334155; color: #f8fafc;">
+                            @item.VendedorResponsavel
+                        </span>
+                    </td>
+
+                    <td>
+                        @* 🚀 IMPORTANTE: Use o ItemId no Concluir para evitar erros no banco *@
+                        <button class="btn btn-success btn-sm" @onclick="() => Concluir(item.ItemId, item.OS)">
+                         <i class="oi oi-check"></i> Concluir
+                        </button>
+                    </td>
+                </tr>
             }
-            else if (lista.Count == 0)
-            {
-                <tr><td colspan="8" class="text-center p-5 text-muted">Nenhum pedido na fila de produção.</td></tr>
-            }
-            else
-            {
-                @foreach (var item in lista)
-{
-    var horas = item.HorasDesdeAbertura ?? 0;
-    var dias = (int)Math.Floor(horas / 24.0);
-    bool atrasado = dias >= 5; // ficou vermelho quando passar de 5 dias (>= 120h)
-
-    <tr class="row-base @(atrasado ? "row-delayed" : "")">
-        <td style="width: 80px; padding: 1rem;">
-            @if (!string.IsNullOrEmpty(item.CaminhoFoto))
-            {
-                <img src="@item.CaminhoFoto"
-                     style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px; border: 1px solid #334155;" />
-            }
-            else
-            {
-                <div style="width: 50px; height: 50px; background: #1e293b; display: flex; align-items: center; justify-content: center; border-radius: 8px;">
-                    <i class="oi oi-image" style="color: #475569;"></i>
-                </div>
-            }
-        </td>
-
-        <td style="padding: 1rem;">
-            <div class="flex items-center gap-2 @(atrasado ? "text-delayed" : "")" style="color: #fedf00;">
-                <i class="oi oi-timer"></i>
-                @(dias == 0 ? "Novo" : $"{dias}d")
-                <small style="color: #94a3b8; margin-left: 6px;">({horas}h)</small>
-            </div>
-        </td>
-
-        <td style="font-weight: 700;">@item.Os</td>
-
-        <td>
-            <div class="obs-box">
-                <span style="font-weight: 600;">@item.Produto</span>
-                <div class="obs-content">
-                    <strong style="color: #fedf00;">📋 Obs. Geral:</strong><br/>
-                    <span>@(item.ObservacaoGeral ?? "-")</span><br/><br/>
-                    <strong style="color: #f87171;">🛠 Obs. Técnica:</strong><br/>
-                    <span>@(item.ObservacaoTecnica ?? "-")</span>
-                </div>
-            </div><br/>
-            <small style="color: #94a3b8;">@item.Cliente</small>
-        </td>
-
-        <td><span class="material-pill">@(item.MaterialBase ?? "N/A")</span></td>
-
-        <td>
-            <span>@item.Largura.ToString("N2") x @item.Altura.ToString("N2")</span><br/>
-            <small style="color: #94a3b8;">Qtd: @item.Quantidade</small>
-        </td>
-
-        <td>
-            <span class="badge bg-dark" style="border: 1px solid #334155; color: #f8fafc;">
-                @item.VendedorResponsavel
-            </span>
-        </td>
-
-        <td>
-            <button class="btn btn-success btn-sm" @onclick="() => Concluir(item.Os)">
-                <i class="oi oi-check"></i> Concluir
-            </button>
-        </td>
-    </tr>
-}
-            }
-        </tbody>
-    </table>
+        }
+    </tbody>
+</table>
 </div>
 
 @code {
@@ -168,11 +220,17 @@
         }
     }
 
-    private async Task Concluir(string os)
+    
+private async Task Concluir(int itemId, string os) 
+{
+    
+    if (await JS.InvokeAsync<bool>("confirm", $"Deseja finalizar a produção da OS {os}?"))
     {
-        if (await JS.InvokeAsync<bool>("confirm", $"Deseja finalizar a produção da OS {os}?"))
-        {
-            await JS.InvokeVoidAsync("alert", $"OS {os} marcada como produzida!");
-        }
+        
+        await JS.InvokeVoidAsync("alert", $"Item {itemId} (OS {os}) marcado como produzido!");
+        
+         
+        await OnInitializedAsync();
     }
+}
 }

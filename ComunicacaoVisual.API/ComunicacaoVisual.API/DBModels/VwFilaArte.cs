@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace ComunicacaoVisual.API.DBModels;
 
@@ -8,6 +9,9 @@ public partial class VwFilaArte
     public int ItemId { get; set; }
     public int? ArquivoId { get; set; }
     public string Os { get; set; } = null!;
+
+    [JsonPropertyName("caminhoFoto")] // 🚀 Isso garante que o JSON da API se conecte ao C#
+    public string? Caminho_Foto { get; set; }
 
     public string Cliente { get; set; } = null!;
 

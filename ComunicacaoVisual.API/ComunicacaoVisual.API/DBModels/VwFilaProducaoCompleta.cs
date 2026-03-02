@@ -5,6 +5,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 public partial class VwFilaProducaoCompleta
 {
+    public int ItemId { get; set; }
     public string Os { get; set; } = null!;
     public string Cliente { get; set; } = null!;
     public string Produto { get; set; } = null!;

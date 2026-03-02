@@ -86,13 +86,17 @@
     <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
 
     <script>
-        window.downloadFileFromStream = async (fileName, contentStreamReference) => {
+        // 🚀 ESTA É A VERSÃO 2.0 - ELA TRATA PDF COMO PDF E IMAGEM COMO IMAGEM
+        window.downloadFileFromStream = async (fileName, contentStreamReference, contentType) => {
             const arrayBuffer = await contentStreamReference.arrayBuffer();
-            const blob = new Blob([arrayBuffer]);
+
+            // Criamos o arquivo (Blob) avisando ao navegador o tipo real dele
+            const blob = new Blob([arrayBuffer], { type: contentType || 'application/octet-stream' });
+
             const url = URL.createObjectURL(blob);
             const anchorElement = document.createElement('a');
             anchorElement.href = url;
-            anchorElement.download = fileName ?? '';
+            anchorElement.download = fileName ?? 'arquivo';
             anchorElement.click();
             anchorElement.remove();
             URL.revokeObjectURL(url);

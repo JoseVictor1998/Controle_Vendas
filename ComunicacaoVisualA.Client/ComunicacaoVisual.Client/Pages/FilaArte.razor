@@ -7,6 +7,9 @@
 @inject IJSRuntime JS
 @inject FilaArteService Service
 @inject AuthenticationStateProvider AuthStateProvider
+@inject HttpClient Http
+@using System.Net.Http
+@using System.Net.Http.Headers
 
 <style>
     .page-container { background-color: #0f172a; min-height: 100vh; padding: 2rem; color: #f8fafc; }
@@ -16,27 +19,62 @@
     .custom-table thead th { color: #94a3b8; text-transform: uppercase; font-size: 0.75rem; padding: 1rem; border: none; }
 
     .row-base { background-color: #1e293b; transition: all 0.2s; border-radius: 8px; }
-    .row-base:hover { background-color: #334155; transform: scale(1.005); }
+    .row-base:hover {
+        position: relative; /* Necessário para o z-index funcionar em  */
+        z-index: 100;        /* Coloca a linha atual e seu conteúdo no topo da pilha */
+    }
 
     .row-delayed { background-color: rgba(127, 29, 29, 0.3) !important; border-left: 4px solid #ef4444; }
-    .text-delayed { color: #f87171; font-weight: bold; }
-
-    .material-pill { background-color: #fedf00; color: #0f172a; padding: 2px 10px; border-radius: 4px; font-weight: 700; font-size: 0.8rem; }
-
-    /* Tooltip ajustado para abrir à direita e não ser cortado */
+    
+    /* TOOLTIP DE OBSERVAÇÕES */
     .obs-box { cursor: help; position: relative; display: inline-block; }
-    .obs-content {
-        display: none; position: absolute; z-index: 100; background: #0f172a; border: 1px solid #334155;
-        padding: 1rem; border-radius: 0.5rem; width: 320px; box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.5);
-        color: #f8fafc; text-align: left;
-        left: 0; top: 100%;
+   .obs-content { 
+        display: none; 
+        position: absolute; 
+        z-index: 99999 !important; /* Continua sendo o mais alto dentro da linha */
+        
+        /* 🚀 FUNDO 100% SÓLIDO: Não deixa nada de trás aparecer */
+        background-color: #1e293b !important; 
+        opacity: 1 !important; 
+        
+        border: 1px solid #fedf00; 
+        padding: 1rem; 
+        border-radius: 0.5rem; 
+        width: 320px; 
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9); 
+        top: 25px; 
+        left: 0;
     }
-    .obs-box:hover .obs-content { display: block; }
 
-    /* Estilo dos botões e select */
-    .btn-action { background: #334155; color: #fedf00; border: 1px solid #475569; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; justify-content: center; height: 28px; }
-    .btn-action:hover { background: #fedf00; color: #0f172a; }
-    .status-select { background: #0f172a; color: #fedf00; border: 1px solid #334155; border-radius: 4px; font-size: 0.75rem; padding: 2px; height: 28px; }
+    /* 🚀 O SEGREDO: Quando você passa o mouse, o "pai" da caixa também sobe na pilha */
+    .obs-box:hover {
+        z-index: 10000;
+        position: relative;
+    }
+
+    .obs-box:hover .obs-content { 
+        display: block; 
+    }
+
+    /* 🚀 BOTÕES MAIS EXPLICATIVOS */
+    .btn-action { 
+        background: #334155; color: #fedf00; border: 1px solid #475569; 
+        padding: 6px 12px; border-radius: 6px; font-size: 0.7rem; font-weight: 600;
+        cursor: pointer; display: inline-flex; align-items: center; gap: 6px; 
+        transition: all 0.2s; text-transform: uppercase;
+    }
+    .btn-action:hover { background: #fedf00; color: #0f172a; border-color: #fedf00; }
+    
+    .status-select { 
+        background: #0f172a; color: #fedf00; border: 1px solid #334155; 
+        border-radius: 6px; font-size: 0.75rem; padding: 4px 8px; height: 32px;
+    }
+
+    .foto-miniatura {
+        width: 50px; height: 50px; object-fit: cover; border-radius: 8px; 
+        border: 1px solid #334155; transition: transform 0.3s ease; cursor: zoom-in;
+    }
+    .foto-miniatura:hover { transform: scale(4); z-index: 10000; position: relative; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
 </style>
 
 <div class="page-container">
@@ -56,10 +94,10 @@
     <table class="custom-table">
         <thead>
             <tr>
+                <th>Foto</th>
                 <th>Tempo</th>
                 <th>OS</th>
-                <th>Cliente</th>
-                <th>Obs</th> @* <-- Movido para cá *@
+                <th>Cliente / Obs</th>
                 <th>Produto</th>
                 <th>Dimensões</th>
                 <th>Qtd</th>
@@ -68,58 +106,64 @@
             </tr>
         </thead>
         <tbody>
-            @if (lista == null)
+            @if (lista != null)
             {
-                <tr><td colspan="9" class="text-center p-5">Carregando fila de arte...</td></tr>
-            }
-            else if (lista.Count == 0)
-            {
-                <tr><td colspan="9" class="text-center p-5 text-muted">Nenhum pedido na fila de arte.</td></tr>
-            }
-            else
-            {
-                foreach (var item in lista)
+                @foreach (var item in lista)
                 {
                     var dias = item.DiasAguardandoArte ?? 0;
-                    bool atrasado = dias > 2;
-
-                    <tr class="row-base @(atrasado ? "row-delayed" : "")">
-                        <td style="padding:1rem;">
-                            <span class="@(atrasado ? "text-delayed" : "")">
-                                <i class="oi oi-timer"></i> @(dias == 0 ? "Novo" : $"{dias}d")
-                            </span>
-                        </td>
-                        <td style="font-weight:700;padding:1rem;">@item.OS</td>
-                        <td style="padding:1rem;color:#e2e8f0;">@item.Cliente</td>
+                    <tr class="row-base @(dias > 2 ? "row-delayed" : "")">
                         
-                        @* Coluna de Observações *@
+                        @* 1. FOTO: Com botão de câmera específico *@
+                        <td style="width: 100px; padding: 1rem; text-align: center;">
+                           @if (!string.IsNullOrEmpty(item.CaminhoFoto))
+                            {
+                               @* 🚀 Lógica inteligente: Verifica se o banco já tem 'http' ou se precisa do endereço da API *@
+                                  var linkFinal = item.CaminhoFoto.Contains("http") 
+                                      ? item.CaminhoFoto 
+                                    : $"{Http.BaseAddress}{item.CaminhoFoto.TrimStart('/')}";
+
+                                <img src="@($"{linkFinal}?t={DateTime.Now.Ticks}")" 
+                              class="foto-miniatura" 
+                               alt="Preview" />
+                            }
+                            else
+                            {
+                                <div style="width: 50px; height: 50px; background: #1e293b; display: flex; align-items: center; justify-content: center; border-radius: 8px; margin: 0 auto;">
+                                    <i class="oi oi-image" style="color: #475569;"></i>
+                                </div>
+                            }
+                            @* 📷 BOTÃO DA CÂMERA: Muda a miniatura *@
+                            <label class="btn-action" style="margin-top: 8px; padding: 2px 6px; font-size: 0.6rem;" title="Mudar Foto de Exibição">
+                                <i class="oi oi-camera-slr"></i> FOTO
+                                <InputFile OnChange="@(e => UploadFotoMiniatura(e, item.ItemId))" style="display:none;" />
+                            </label>
+                        </td>
+
+                        <td style="padding:1rem;">@(dias == 0 ? "Novo" : $"{dias}d")</td>
+                        <td style="padding:1rem; font-weight: 700;">@item.OS</td>
                         <td style="padding:1rem;">
+                            <span style="display: block; font-weight: 600;">@item.Cliente</span>
                             <div class="obs-box">
-                                <span style="color:#94a3b8; text-decoration: underline;">Ver</span>
+                                <span style="color:#94a3b8; text-decoration: underline; font-size: 0.8rem;">Ver Observações</span>
                                 <div class="obs-content">
-                                    <strong style="color:#fedf00;">📋 Geral:</strong><br />
-                                    <span>@(string.IsNullOrWhiteSpace(item.ObservacaoGeral) ? "-" : item.ObservacaoGeral)</span><br /><br />
-                                    <strong style="color:#f87171;">🛠 Técnica:</strong><br />
-                                    <span>@(string.IsNullOrWhiteSpace(item.ObservacaoTecnica) ? "-" : item.ObservacaoTecnica)</span>
+                                    <strong>Geral:</strong> @(item.ObservacaoGeral ?? "-")<br /><br />
+                                    <strong>Técnica:</strong> @(item.ObservacaoTecnica ?? "-")
                                 </div>
                             </div>
                         </td>
-
-                        <td style="padding:1rem;color:#e2e8f0;">@item.Produto</td>
+                        <td style="padding:1rem;">@item.Produto</td>
+                        <td style="padding:1rem;">@item.Largura.ToString("N2") x @item.Altura.ToString("N2")</td>
+                        <td style="padding:1rem;">@item.Quantidade</td>
                         <td style="padding:1rem;">
-                            <span>@item.Largura.ToString("N2") x @item.Altura.ToString("N2")</span>
-                        </td>
-                        <td style="padding:1rem;color:#e2e8f0;">@item.Quantidade</td>
-                        
-                        <td style="padding:1rem;">
-                            <span class="material-pill">@item.StatusArte</span>
+                            <span style="background: #fedf00; color: #0f172a; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 0.75rem;">
+                                @item.StatusArte
+                            </span>
                         </td>
 
-                        @* Coluna de Ações Mesclada *@
+                        @* 9. AÇÕES: Botões explicativos com texto *@
                         <td style="padding:1rem;">
-                            <div style="display: flex; gap: 8px; align-items: center;">
+                            <div style="display: flex; flex-direction: column; gap: 6px;">
                                 
-                                @* 1. Seletor de Status *@
                                 <select class="status-select" @onchange="@(e => AlterarStatus(e, item.ItemId))">
                                     <option value="2" selected="@(item.StatusArte == "Enviada")">Enviada</option>
                                     <option value="3" selected="@(item.StatusArte == "Em Correção")">Em Correção</option>
@@ -127,19 +171,21 @@
                                     <option value="5">Reprovar</option>
                                 </select>
 
-                                @* 2. Botão de Download *@
-                                @if (item.ArquivoId > 0)
-                                {
-                                    <button class="btn-action" style="color: #60a5fa;" @onclick="() => BaixarEProcessar(item.ArquivoId)" title="Baixar Arte">
-                                        <i class="oi oi-data-transfer-download"></i>
-                                    </button>
-                                }
+                                <div style="display: flex; gap: 6px;">
+                                    @if (item.ArquivoId > 0)
+                                    {
+                                        <button class="btn-action" @onclick="() => BaixarEProcessar(item.ArquivoId)">
+                                            <i class="oi oi-data-transfer-download"></i> BAIXAR
+                                        </button>
+                                    }
 
-                                @* 3. Botão de Upload *@
-                                <label class="btn-action" style="margin-bottom: 0;" title="Vincular Arte">
-                                    <i class="oi oi-cloud-upload"></i>
-                                    <InputFile OnChange="@(e => SelecionarArquivo(e, item.ItemId))" style="display:none;" />
-                                </label>
+                                    @* ☁️ BOTÃO DA NUVEM: Sobe o arquivo real (PDF/Arte) *@
+                                    <label class="btn-action">
+                                        <i class="oi oi-cloud-upload"></i> SUBIR ARTE
+                                        <InputFile OnChange="@(e => UploadArquivoArte(e, item.ItemId))" style="display:none;" />
+                                    </label>
+                                </div>
+
                             </div>
                         </td>
                     </tr>
@@ -151,7 +197,6 @@
 
 @code {
     private List<FilaArteDTO>? lista;
-    private bool processando = false;
     private int usuarioLogadoId;
 
     protected override async Task OnInitializedAsync()
@@ -162,15 +207,10 @@
 
     private async Task ObterUsuarioLogado()
     {
-        // Obtém o estado de autenticação e busca a Claim "UsuarioId" definida no seu Token JWT
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
         var claimId = user.FindFirst("UsuarioId")?.Value;
-        
-        if (!int.TryParse(claimId, out usuarioLogadoId))
-        {
-            usuarioLogadoId = 2; // Valor padrão admin para testes se necessário
-        }
+        if (!int.TryParse(claimId, out usuarioLogadoId)) usuarioLogadoId = 2; 
     }
 
     private async Task CarregarFila()
@@ -180,39 +220,56 @@
     }
 
     private async Task BaixarEProcessar(int? arquivoId)
-    {
-        if (arquivoId == null || arquivoId == 0) return;
-        var (bytes, type, name) = await Service.BaixarArquivo(arquivoId.Value);
-        if (bytes != null)
-        {
-            using var stream = new MemoryStream(bytes);
-            using var streamRef = new DotNetStreamReference(stream);
-            await JS.InvokeVoidAsync("downloadFileFromStream", name, streamRef);
-        }
-    }
+{
+    if (arquivoId == null || arquivoId == 0) return;
 
-    private async Task SelecionarArquivo(InputFileChangeEventArgs e, int itemId)
+    var (bytes, type, name) = await Service.BaixarArquivo(arquivoId.Value);
+    
+    if (bytes != null)
     {
-        var file = e.File;
-        if (file == null) return;
-        processando = true;
-        var sucesso = await Service.VincularArte(itemId, file);
-        if (sucesso) await CarregarFila();
-        processando = false;
-        StateHasChanged();
+        using var stream = new MemoryStream(bytes);
+        using var streamRef = new DotNetStreamReference(stream);
+        
+        // 🚀 PASSAMOS O 'type' (ex: application/pdf) para o JS não se perder
+        await JS.InvokeVoidAsync("downloadFileFromStream", name, streamRef, type);
     }
+}
 
     private async Task AlterarStatus(ChangeEventArgs e, int itemId)
     {
         if (int.TryParse(e.Value?.ToString(), out int novoStatusId))
         {
-            // Passamos o ID dinâmico capturado do Token para o Service
             var sucesso = await Service.MudarStatus(itemId, novoStatusId, usuarioLogadoId);
-            if (sucesso) 
-            {
-                await CarregarFila(); // O item aprovado sumirá da fila automaticamente
-                StateHasChanged();
-            }
+            if (sucesso) await CarregarFila();
+        }
+    }
+
+    private async Task UploadFotoMiniatura(InputFileChangeEventArgs e, int itemId)
+{
+    var content = new MultipartFormDataContent();
+    
+    // 🚀 O SEGREDO: Definir o tipo do conteúdo (image/jpeg, etc)
+    var fileContent = new StreamContent(e.File.OpenReadStream(maxAllowedSize: 1024 * 1024 * 15));
+    fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(e.File.ContentType);
+    
+    content.Add(fileContent, "file", e.File.Name);
+
+    var res = await Http.PostAsync($"api/Producao/UploadFotoArte/{itemId}", content);
+
+    if (res.IsSuccessStatusCode)
+    {
+        await CarregarFila(); // Recarrega a lista para a foto atualizar na tela
+        StateHasChanged();    // Força o Blazor a redesenhar a página
+    }
+}
+
+    private async Task UploadArquivoArte(InputFileChangeEventArgs e, int itemId)
+    {
+        var sucesso = await Service.VincularArte(itemId, e.File);
+        if (sucesso) 
+        {
+            await CarregarFila();
+            await JS.InvokeVoidAsync("alert", "Arte final vinculada com sucesso!");
         }
     }
 }

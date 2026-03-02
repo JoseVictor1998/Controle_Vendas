@@ -2,6 +2,7 @@
 {
     public class FilaProducaoDTO
     {
+        public int ItemId { get; set; }
         public string OS { get; set; } = string.Empty;
         public string Cliente { get; set; } = string.Empty;
         public string Produto { get; set; } = string.Empty;

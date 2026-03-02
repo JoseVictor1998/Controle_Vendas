@@ -513,6 +513,36 @@ namespace ComunicacaoVisual.API.Controllers
             }
         }
 
+        [HttpPost("UploadFotoArte/{itemId}")]
+        public async Task<IActionResult> UploadFotoArte(int itemId, IFormFile file)
+        {
+            if (file == null || file.Length == 0) return BadRequest("Arquivo não enviado");
+
+            // 1. Caminho físico onde o Docker/Windows salva o arquivo
+            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "fotos");
+            if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
+
+            var fileName = $"foto_{itemId}.jpg"; // Nome fixo por ID para facilitar
+            var filePath = Path.Combine(uploadsFolder, fileName);
+
+            // 2. Salva o arquivo (FileMode.Create substitui se já existir)
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            // 3. ATUALIZA O BANCO: O segredo está na barra inicial '/'
+            var item = await _context.PedidoItems.FirstOrDefaultAsync(p => p.ItemId == itemId);
+            if (item != null)
+            {
+                // 🚀 SALVE ASSIM: Começando com / para o navegador achar a raiz
+                item.CaminhoFoto = $"/uploads/fotos/{fileName}";
+                await _context.SaveChangesAsync();
+            }
+
+            return Ok();
+        }
+
         [Authorize(Roles = "God,Admin,Vendedor")]
         [HttpPost("CadastrarCliente")]
 
