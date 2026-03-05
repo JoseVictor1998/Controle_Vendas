@@ -14,6 +14,7 @@ builder.Services.AddScoped<PedidoService>();
 builder.Services.AddScoped<FilaProducaoService>();
 builder.Services.AddScoped<ClienteService>();
 builder.Services.AddScoped<FilaArteService>();
+builder.Services.AddScoped<FilaArteFullService>();
 
 // Auth
 builder.Services.AddAuthorizationCore();

@@ -1,0 +1,191 @@
+﻿@page "/fila-arte-full"
+@using Microsoft.AspNetCore.Authorization
+@using ComunicacaoVisual.Client.Models
+@using ComunicacaoVisual.Client.Services
+@attribute [Authorize(Roles = "God,Admin,Arte")]
+@inject HttpClient Http
+@inject FilaArteFullService Service
+@inject IJSRuntime JS 
+
+<style>
+    .page-container { background-color: #0f172a; min-height: 100vh; padding: 2rem; color: #f8fafc; }
+    .header-section { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; }
+    .custom-table { width: 100%; border-collapse: separate; border-spacing: 0 0.75rem; }
+    .custom-table thead th { color: #94a3b8; text-transform: uppercase; font-size: 0.75rem; padding: 1rem; border: none; }
+    
+    .row-base { background-color: #1e293b; transition: all 0.2s; border-radius: 8px; }
+    .row-base:hover { position: relative; z-index: 100; }
+    
+    .status-pill { background-color: #3b82f6; color: #ffffff; padding: 4px 12px; border-radius: 9999px; font-weight: 600; font-size: 0.75rem; }
+    .setor-pill { background-color: #475569; color: #f8fafc; padding: 4px 12px; border-radius: 4px; font-weight: 600; font-size: 0.75rem; }
+
+    .search-box {
+        background-color: #1e293b; border: 1px solid #334155; color: #f8fafc;
+        padding: 0.75rem 1rem; border-radius: 8px; width: 350px;
+        transition: border-color 0.3s; outline: none;
+    }
+    .search-box:focus { border-color: #fedf00; box-shadow: 0 0 0 2px rgba(254, 223, 0, 0.2); }
+
+    .obs-box { cursor: help; position: relative; display: inline-block; }
+    .obs-content { 
+        display: none; position: absolute; z-index: 99999 !important; 
+        background-color: #1e293b !important; opacity: 1 !important; 
+        border: 1px solid #fedf00; padding: 1rem; border-radius: 0.5rem; 
+        width: 300px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9); 
+        top: 25px; left: 0;
+    }
+    .obs-box:hover { z-index: 10000; position: relative; }
+    .obs-box:hover .obs-content { display: block; }
+</style>
+
+<div class="page-container">
+    <div class="header-section">
+        <div>
+            <h1 style="font-size: 1.5rem; font-weight: 700;">Histórico de Artes</h1>
+            <p style="color: #94a3b8; font-size: 0.875rem;">Consulte o acervo de artes finalizadas ou em processo</p>
+        </div>
+        
+        <div>
+            <input type="text" 
+                   class="search-box" 
+                   placeholder="🔍 Pesquisar por OS, Cliente ou Produto..." 
+                   @bind="termoPesquisa" 
+                   @bind:event="oninput" />
+        </div>
+    </div>
+
+    <table class="custom-table">
+        <thead>
+            <tr>
+                <th>OS</th>
+                <th>Cliente / Produto</th>
+                <th>Dimensões (Qtd)</th>
+                <th>Setor / Status</th>
+                <th>Arquivo</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (lista == null)
+            {
+                <tr><td colspan="5" class="text-center p-5 text-muted">Carregando acervo...</td></tr>
+            }
+            else if (!ListaFiltrada.Any())
+            {
+                <tr><td colspan="5" class="text-center p-5 text-muted">Nenhum resultado encontrado para "@termoPesquisa".</td></tr>
+            }
+            else
+            {
+                @foreach (var item in ListaFiltrada)
+                {
+                    <tr class="row-base">
+                        <td style="font-weight: 700; padding: 1rem;">@item.Os</td>
+                        
+                        <td>
+                            <div class="obs-box">
+                                <span style="font-weight: 600;">@item.Produto</span>
+                                <div class="obs-content">
+                                    <strong style="color: #f87171;">🛠 Obs. Técnica:</strong><br/>
+                                    <span>@(string.IsNullOrEmpty(item.ObservacaoTecnica) ? "Sem observações" : item.ObservacaoTecnica)</span>
+                                </div>
+                            </div><br/>
+                            <small style="color: #94a3b8;">@item.Cliente</small>
+                        </td>
+
+                        <td>
+                            <span>@item.Largura.ToString("N2") x @item.Altura.ToString("N2")</span><br/>
+                            <small style="color: #94a3b8;">Qtd: @item.Quantidade</small>
+                        </td>
+
+                        <td>
+                            <span class="setor-pill">@item.SetorFila</span><br/>
+                            <span class="status-pill" style="display: inline-block; margin-top: 6px;">@(item.StatusArte ?? "Pendente")</span>
+                        </td>
+
+                        <td>
+                            @* 🚀 SUBSTITUÍMOS O LINK PELO NOVO BOTÃO DE DOWNLOAD SEGURO *@
+                            @if (item.ArquivoId.HasValue && item.ArquivoId.Value > 0)
+                            {
+                                <button @onclick="() => BaixarArquivo(item.ArquivoId.Value)" class="btn btn-outline-warning btn-sm" style="border-color: #fedf00; color: #fedf00;">
+                                    <i class="oi oi-data-transfer-download"></i> Baixar Arte
+                                </button>
+                            }
+                            else
+                            {
+                                <span style="color: #64748b; font-size: 0.8rem;">Sem arquivo</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    private List<FilaArteFullDTO>? lista;
+    private string termoPesquisa = "";    
+
+    private IEnumerable<FilaArteFullDTO> ListaFiltrada
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(termoPesquisa))
+                return lista ?? new List<FilaArteFullDTO>();            
+            
+            var termo = termoPesquisa.ToLower();
+
+            return lista!.Where(x => 
+                (x.Os?.ToLower().Contains(termo) ?? false) ||
+                (x.Cliente?.ToLower().Contains(termo) ?? false) ||
+                (x.Produto?.ToLower().Contains(termo) ?? false)
+            );
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try 
+        {
+            lista = await Service.Listar();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao carregar Histórico: {ex.Message}");
+            lista = new();
+        }
+    }
+
+    // 🚀 O NOVO MÉTODO QUE FAZ O DOWNLOAD USANDO O SEU TOKEN
+    private async Task BaixarArquivo(int idArquivo)
+    {
+        try
+        {
+            // Bate na sua API passando o ID
+            var response = await Http.GetAsync($"api/Producao/DownloadArte/{idArquivo}");
+            
+            if (response.IsSuccessStatusCode)
+            {
+                // Pega os bytes do arquivo
+                var bytes = await response.Content.ReadAsByteArrayAsync();
+                
+                // Tenta pegar o nome original, se não achar, inventa um nome seguro
+                var fileName = response.Content.Headers.ContentDisposition?.FileNameStar 
+                               ?? response.Content.Headers.ContentDisposition?.FileName?.Trim('"') 
+                               ?? $"arte_os_{idArquivo}.zip";
+
+                // Converte para Base64 e manda para o JavaScript baixar
+                var base64 = Convert.ToBase64String(bytes);
+                await JS.InvokeVoidAsync("downloadFile", fileName, base64);
+            }
+            else
+            {
+                Console.WriteLine($"Erro da API: {response.StatusCode}");
+                await JS.InvokeVoidAsync("alert", "Erro ao baixar o arquivo. Ele pode não existir mais no servidor.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro no Front-end: {ex.Message}");
+        }
+    }
+}

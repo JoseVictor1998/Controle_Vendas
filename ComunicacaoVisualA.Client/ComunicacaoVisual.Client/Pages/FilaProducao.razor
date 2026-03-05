@@ -193,8 +193,8 @@
 
                     <td>
                         @* 🚀 IMPORTANTE: Use o ItemId no Concluir para evitar erros no banco *@
-                        <button class="btn btn-success btn-sm" @onclick="() => Concluir(item.ItemId, item.OS)">
-                         <i class="oi oi-check"></i> Concluir
+                        <button class="btn btn-success btn-sm" @onclick="() => Concluir(item)">
+                        <i class="oi oi-check"></i> Concluir
                         </button>
                     </td>
                 </tr>
@@ -221,16 +221,24 @@
     }
 
     
-private async Task Concluir(int itemId, string os) 
-{
-    
-    if (await JS.InvokeAsync<bool>("confirm", $"Deseja finalizar a produção da OS {os}?"))
-    {
+private async Task Concluir(FilaProducaoCompletaDTO p)
+{    
+    if (await JS.InvokeAsync<bool>("confirm", $"Confirmar conclusão da OS {p.OS}?"))
+    {        
+        // 🚀 Mandando para o Status 6 (ou o número que significa "Pronto" na sua empresa)
+        var request = new { ItemId = p.ItemId, NovoStatusId = 6 }; 
         
-        await JS.InvokeVoidAsync("alert", $"Item {itemId} (OS {os}) marcado como produzido!");
-        
-         
-        await OnInitializedAsync();
+        var res = await Http.PutAsJsonAsync("api/Producao/AtualizarStatus", request);
+
+        if (res.IsSuccessStatusCode) 
+        {            
+            // 🚀 CORRIGIDO: Agora usamos 'lista' para remover da tela, igual à declaração
+            lista?.RemoveAll(x => x.ItemId == p.ItemId);
+        }
+        else 
+        {
+            await JS.InvokeVoidAsync("alert", "Erro: O banco de dados não conseguiu atualizar o status.");
+        }
     }
 }
 }

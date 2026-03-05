@@ -596,6 +596,10 @@ public partial class ControleVendasContext : DbContext
                 .HasNoKey()
                 .ToView("VW_Fila_Arte_Finalista_Full");
 
+            entity.Property(e => e.ArquivoId).HasColumnName("ArquivoId");
+            entity.Property(e => e.ItemId).HasColumnName("Item_ID");
+            entity.Property(e => e.PedidoId).HasColumnName("Pedido_ID");
+            entity.Property(e => e.PedidoStatusId).HasColumnName("Pedido_Status_ID");
             entity.Property(e => e.Altura).HasColumnType("decimal(10, 2)");
             entity.Property(e => e.CaminhoArte)
                 .HasMaxLength(255)

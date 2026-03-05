@@ -5,6 +5,10 @@ namespace ComunicacaoVisual.API.DBModels;
 
 public partial class VwFilaArteFinalistaFull
 {
+    public int? ArquivoId { get; set; }
+    public int ItemId { get; set; }
+    public int PedidoId { get; set; }
+    public int PedidoStatusId { get; set; }
     public string Os { get; set; } = null!;
 
     public string Cliente { get; set; } = null!;
