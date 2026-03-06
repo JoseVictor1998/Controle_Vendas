@@ -470,25 +470,82 @@ namespace ComunicacaoVisual.API.Controllers
         {
             try
             {
-                await _context.Database.ExecuteSqlInterpolatedAsync($@"
-                    EXEC SP_Criar_Pedido_Com_Item 
-                        @Cliente_ID = {model.ClienteId}, 
-                        @OS_Externa = {model.OsExterna}, 
-                        @Vendedor_ID = {model.VendedorID}, 
-                        @Observacao_Geral = {model.ObservacaoGeral}, 
-                        @Tipo_Produto_ID = {model.TipoProdutoId}, 
-                        @Largura = {model.Largura}, 
-                        @Altura = {model.Altura}, 
-                        @Quantidade = {model.Quantidade}, 
-                        @Observacao_Tecnica = {model.ObservacaoTecnica}, 
-                        @Caminho_Foto = {model.CaminhoFoto}");
-                return Ok(new { mensagem = "Pedido criado com item e enviado para produção!" });
+                // 🚀 O SEGREDO: Envelopa a transação na estratégia de resiliência do EF Core
+                var strategy = _context.Database.CreateExecutionStrategy();
+
+                await strategy.ExecuteAsync(async () =>
+                {
+                    // Agora sim podemos abrir a transação com segurança!
+                    using var transaction = await _context.Database.BeginTransactionAsync();
+
+                    try
+                    {
+                        // 1. Cria o Pedido Pai
+                        var novoPedido = new Pedido
+                        {
+                            ClienteId = model.ClienteId,
+                            OsExterna = model.OsExterna,
+                            VendedorId = model.VendedorID,
+                            StatusId = 1 ,
+                            ObservacaoGeral = string.IsNullOrWhiteSpace(model.ObservacaoGeral) ? "" : model.ObservacaoGeral
+                        };
+
+                        _context.Pedidos.Add(novoPedido);
+                        await _context.SaveChangesAsync();
+
+                        // 2. Faz um laço de repetição para salvar CADA ITEM da lista
+                        foreach (var item in model.Itens)
+                        {
+                            var novoItem = new PedidoItem // <- Ajuste o nome da classe se for diferente
+                            {
+                                PedidoId = novoPedido.PedidoId,
+                                TipoProdutoId = item.TipoProdutoId,
+                                Largura = item.Largura,
+                                Altura = item.Altura,
+                                Quantidade = item.Quantidade,
+                                ObservacaoTecnica = string.IsNullOrWhiteSpace(item.ObservacaoTecnica) ? "" : item.ObservacaoTecnica,
+                                CaminhoFoto = item.CaminhoFoto
+                            };
+
+                            _context.PedidoItems.Add(novoItem); // <- Ajuste o nome do DbSet se for diferente
+                            await _context.SaveChangesAsync();
+
+                            // 3. Salva a arte atrelada a esse item (se houver)
+                            if (!string.IsNullOrWhiteSpace(item.CaminhoFoto))
+                            {
+                                var novaArte = new ArquivoArte // <- Lembre de ajustar para a sua classe (ex: ArquivoArte)
+                                {
+                                    ItemId = novoItem.ItemId,
+                                    CaminhoArquivo = item.CaminhoFoto,
+
+                                    // 🚀 A CORREÇÃO ESTÁ AQUI: Fatiamos o link e pegamos o nome real do arquivo!
+                                    NomeArquivo = item.CaminhoFoto.Split('/', '\\').Last(),
+
+                                    StatusArteId = 1 // Aguardando Arte Final
+                                };
+
+                                _context.ArquivoArtes.Add(novaArte);
+                                await _context.SaveChangesAsync();
+                            }
+                        }
+
+                        // 4. Confirma tudo no banco de dados!
+                        await transaction.CommitAsync();
+                    }
+                    catch (Exception)
+                    {
+                        // Se der erro lá dentro, desfaz a transação e repassa o erro para o catch de fora
+                        await transaction.RollbackAsync();
+                        throw;
+                    }
+                });
+
+                return Ok(new { mensagem = $"Pedido criado com sucesso contendo {model.Itens.Count} item(ns)!" });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { erro = "Erro ao criar pedido", detalhe = ex.Message });
+                return StatusCode(500, new { erro = "Erro ao criar pedido", detalhe = ex.InnerException?.Message ?? ex.Message });
             }
-
         }
 
 

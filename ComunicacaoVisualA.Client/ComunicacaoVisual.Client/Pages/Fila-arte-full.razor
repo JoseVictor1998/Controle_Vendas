@@ -105,8 +105,8 @@
                             @* 🚀 SUBSTITUÍMOS O LINK PELO NOVO BOTÃO DE DOWNLOAD SEGURO *@
                             @if (item.ArquivoId.HasValue && item.ArquivoId.Value > 0)
                             {
-                                <button @onclick="() => BaixarArquivo(item.ArquivoId.Value)" class="btn btn-outline-warning btn-sm" style="border-color: #fedf00; color: #fedf00;">
-                                    <i class="oi oi-data-transfer-download"></i> Baixar Arte
+                                <button @onclick="() => BaixarArquivo(item.ArquivoId.Value, item.CaminhoArte)" class="btn btn-outline-warning btn-sm" style="border-color: #fedf00; color: #fedf00;">
+                               <i class="oi oi-data-transfer-download"></i> Baixar Arte
                                 </button>
                             }
                             else
@@ -154,28 +154,34 @@
             lista = new();
         }
     }
-
-    // 🚀 O NOVO MÉTODO QUE FAZ O DOWNLOAD USANDO O SEU TOKEN
-    private async Task BaixarArquivo(int idArquivo)
+   
+    private async Task BaixarArquivo(int idArquivo, string? caminhoArte)
     {
         try
         {
-            // Bate na sua API passando o ID
             var response = await Http.GetAsync($"api/Producao/DownloadArte/{idArquivo}");
             
             if (response.IsSuccessStatusCode)
             {
-                // Pega os bytes do arquivo
-                var bytes = await response.Content.ReadAsByteArrayAsync();
-                
-                // Tenta pegar o nome original, se não achar, inventa um nome seguro
+                // 1. Tenta descobrir o nome original pelo caminho do banco de dados
+                string nomeOriginal = "arte_sem_nome.pdf"; // Um fallback melhor que zip
+                if (!string.IsNullOrWhiteSpace(caminhoArte))
+                {
+                    // Fatiamos o caminho e pegamos só o finalzinho (ex: fachada.pdf)
+                    nomeOriginal = caminhoArte.Split('/', '\\').Last(); 
+                }
+
+                // 2. Monta o nome final (ADEUS .ZIP!)
                 var fileName = response.Content.Headers.ContentDisposition?.FileNameStar 
                                ?? response.Content.Headers.ContentDisposition?.FileName?.Trim('"') 
-                               ?? $"arte_os_{idArquivo}.zip";
+                               ?? nomeOriginal; 
 
-                // Converte para Base64 e manda para o JavaScript baixar
-                var base64 = Convert.ToBase64String(bytes);
-                await JS.InvokeVoidAsync("downloadFile", fileName, base64);
+                var contentType = response.Content.Headers.ContentType?.MediaType ?? "application/octet-stream";
+
+                var stream = await response.Content.ReadAsStreamAsync();
+                using var streamRef = new DotNetStreamReference(stream);
+
+                await JS.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef, contentType);
             }
             else
             {
