@@ -757,15 +757,23 @@ namespace ComunicacaoVisual.API.Controllers
         {
             try
             {
+                // 1. Informa o usuário para o histórico do banco
                 await _context.Database.ExecuteSqlInterpolatedAsync(
-      $@"EXEC sp_set_session_context @key = N'UsuarioId', @value = {model.UsuarioId};"
-  );
+                    $@"EXEC sp_set_session_context @key = N'UsuarioId', @value = {model.UsuarioId};");
 
+                // 2. 🚀 A MÁGICA: Descobre qual é o Pedido verdadeiro daquele Item antes de atualizar
                 await _context.Database.ExecuteSqlInterpolatedAsync($@"
-    EXEC SP_Atualizar_Status_Pedido 
-        @Pedido_ID = {model.ItemId}, 
-        @Novo_Status_ID = {model.NovoStatusId}, 
-        @Usuario_ID = {model.UsuarioId}");
+            DECLARE @RealPedidoId INT;
+            
+            -- Pega o ID do Pedido Pai amarrado a este Item
+            SELECT @RealPedidoId = Pedido_ID FROM Pedido_Item WHERE Item_ID = {model.ItemId};
+
+            -- Agora sim, manda o ID correto para a Procedure!
+            EXEC SP_Atualizar_Status_Pedido 
+                 @Pedido_ID = @RealPedidoId, 
+                 @Novo_Status_ID = {model.NovoStatusId}, 
+                 @Usuario_ID = {model.UsuarioId};
+        ");
 
                 return Ok(new { mensagem = "Status atualizado! O pedido avançou na fila." });
             }
