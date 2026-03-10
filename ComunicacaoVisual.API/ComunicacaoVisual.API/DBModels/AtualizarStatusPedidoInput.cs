@@ -7,6 +7,7 @@
         public int UsuarioId { get; set; }
         public decimal? ValorTotal { get; set; } = null;
         public string FormaPagamento { get; set; } = null!;
+        public int? Parcelas { get; set; }
 
     }
 }

@@ -231,26 +231,36 @@ namespace ComunicacaoVisual.API.Controllers
         {
             try
             {
-                
                 var roleUsuarioLogado = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
                 var idUsuarioLogado = User.FindFirst("UsuarioId")?.Value;
 
-                
                 if (roleUsuarioLogado == "Vendedor" && idUsuarioLogado != vendedorId.ToString())
                 {
                     return Forbid("Você não tem permissão para visualizar pedidos de outros vendedores.");
                 }
 
-                
-                var consulta = _context.VwMeusPedidosVendedors
-                                       .Where(p => p.VendedorId == vendedorId);
+                // 🚀 A MÁGICA: LINQ puro! Esquece a View, buscamos direto no banco e moldamos o JSON!
+                var consulta = _context.Pedidos
+                    .Include(p => p.Cliente)
+                    .Include(p => p.Status)
+                    .Include(p => p.PedidoItems)
+                    .Where(p => p.VendedorId == vendedorId)
+                    .Select(p => new
+                    {
+                        pedido_ID = p.PedidoId,
+                        os = p.OsExterna,
+                        cliente = p.Cliente.Nome,
+                        status_ID = p.StatusId,
+                        status_Atual = p.Status.Nome,
+                        valor_Total = p.ValorTotal,
+                        data_Pedido = p.DataPedido,
+                        qtd_Itens = p.PedidoItems.Count(),
+                        observacao_Geral = p.ObservacaoGeral
+                    });
 
-                
                 if (!string.IsNullOrEmpty(filtro))
                 {
-                    consulta = consulta.Where(p =>
-                        p.OsExterna.Contains(filtro) ||
-                        p.Cliente.Contains(filtro));
+                    consulta = consulta.Where(p => p.os.Contains(filtro) || p.cliente.Contains(filtro));
                 }
 
                 var resultado = await consulta.ToListAsync();
@@ -715,6 +725,22 @@ namespace ComunicacaoVisual.API.Controllers
             existente.CaminhoArquivo = $"/api/Producao/DownloadArte/{existente.ArquivoId}";
             await _context.SaveChangesAsync();
 
+            // ... (código existente que salva o arquivo)
+            await _context.SaveChangesAsync(); // A linha que já existe aí
+
+            // 🚀 NOVO: Avisa a OS que a arte chegou para o vendedor aprovar!
+            var itemPedido = await _context.PedidoItems.FirstOrDefaultAsync(x => x.ItemId == itemId);
+            if (itemPedido != null)
+            {
+                var pedido = await _context.Pedidos.FirstOrDefaultAsync(p => p.PedidoId == itemPedido.PedidoId);
+                if (pedido != null && pedido.StatusId < 3)
+                {
+                    pedido.StatusId = 3; // 3 = Arte em Análise
+                    await _context.SaveChangesAsync();
+                }
+            }
+
+
             return Ok(new
             {
                 id = existente.ArquivoId,
@@ -814,27 +840,124 @@ namespace ComunicacaoVisual.API.Controllers
             try
             {
                 await _context.Database.ExecuteSqlInterpolatedAsync(
-    $@"EXEC sp_set_session_context @key = N'UsuarioId', @value = {model.UsuarioId};"
-);
+                    $@"EXEC sp_set_session_context @key = N'UsuarioId', @value = {model.UsuarioId};"
+                );
 
                 await _context.Database.ExecuteSqlInterpolatedAsync($@"
-                    EXEC SP_Atualizar_Status_Pedido 
-                        @Pedido_ID = {model.PedidoId}, 
-                        @Novo_Status_ID = {model.NovoStatusId}, 
-                        @Usuario_ID = {model.UsuarioId}, 
-                        @Valor_Total = {model.ValorTotal}, 
-                        @Forma_Pagamento = {model.FormaPagamento}");
-                return Ok(new { mensagem = "Status do pedido atualizado com sucesso!" });
+            EXEC SP_Atualizar_Status_Pedido 
+                @Pedido_ID = {model.PedidoId}, 
+                @Novo_Status_ID = {model.NovoStatusId}, 
+                @Usuario_ID = {model.UsuarioId}, 
+                @Valor_Total = {model.ValorTotal}, 
+                @Forma_Pagamento = {model.FormaPagamento},
+                @Parcelas = {model.Parcelas}"); // 🚀 A API AGORA ENVIA A PARCELA
 
+                return Ok(new { mensagem = "Status do pedido e financeiro atualizados com sucesso!" });
             }
             catch (Exception ex)
             {
                 return StatusCode(500, new { erro = "Erro ao atualizar status do pedido", detalhe = ex.Message });
-
             }
-
         }
 
+        [Authorize(Roles = "God,Admin,Vendedor")]
+        [HttpPut("SolicitarCorrecao")]
+        public async Task<IActionResult> SolicitarCorrecao([FromBody] SolicitarCorrecaoInput model)
+        {
+            try
+            {
+                var pedido = await _context.Pedidos.FindAsync(model.PedidoId);
+                if (pedido == null) return NotFound("Pedido não encontrado");
+
+                // Status 3 = Arte em Correção / Status 8 = Reprovado(Cancelado)
+                pedido.StatusId = model.NovoStatusId;
+
+                // Só atualiza o texto se o vendedor tiver digitado algo novo
+                if (!string.IsNullOrWhiteSpace(model.NovaObservacao))
+                {
+                    pedido.ObservacaoGeral = model.NovaObservacao;
+                }
+
+                // Passa o ID do usuário para o log do banco
+                await _context.Database.ExecuteSqlInterpolatedAsync(
+                    $@"EXEC sp_set_session_context @key = N'UsuarioId', @value = {model.UsuarioId};");
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { mensagem = "Pedido atualizado com sucesso!" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { erro = "Erro ao solicitar correção", detalhe = ex.Message });
+            }
+        }
+
+        // Coloque esta classe lá no fundo do arquivo ou na sua pasta de Models
+        public class SolicitarCorrecaoInput
+        {
+            public int PedidoId { get; set; }
+            public int UsuarioId { get; set; }
+            public int NovoStatusId { get; set; }
+            public string NovaObservacao { get; set; } = "";
+        }
+
+        [Authorize(Roles = "God,Admin,Vendedor")]
+        [HttpPut("SalvarCorrecaoCompleta")]
+        public async Task<IActionResult> SalvarCorrecaoCompleta([FromBody] CorrecaoCompletaInput model)
+        {
+            try
+            {
+                var pedido = await _context.Pedidos
+                    .Include(p => p.PedidoItems)
+                    .FirstOrDefaultAsync(p => p.PedidoId == model.PedidoId);
+
+                if (pedido == null) return NotFound("Pedido não encontrado");
+
+                // Muda para Arte em Correção e atualiza a observação
+                pedido.StatusId = 3;
+                pedido.ObservacaoGeral = string.IsNullOrWhiteSpace(model.NovaObservacao) ? "" : model.NovaObservacao;
+
+                // Atualiza a Medida, Quantidade e Material de CADA item da OS
+                foreach (var itemModel in model.Itens)
+                {
+                    var itemDb = pedido.PedidoItems.FirstOrDefault(i => i.ItemId == itemModel.ItemId);
+                    if (itemDb != null)
+                    {
+                        itemDb.TipoProdutoId = itemModel.TipoProdutoId;
+                        itemDb.Largura = itemModel.Largura;
+                        itemDb.Altura = itemModel.Altura;
+                        itemDb.Quantidade = itemModel.Quantidade;
+                        itemDb.ObservacaoTecnica = string.IsNullOrWhiteSpace(itemModel.ObservacaoTecnica) ? "" : itemModel.ObservacaoTecnica;
+                    }
+                }
+
+                // Salva quem fez a alteração
+                await _context.Database.ExecuteSqlInterpolatedAsync(
+                    $@"EXEC sp_set_session_context @key = N'UsuarioId', @value = {model.UsuarioId};");
+
+                await _context.SaveChangesAsync();
+                return Ok(new { mensagem = "Correção salva com sucesso!" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { erro = "Erro ao salvar correção", detalhe = ex.Message });
+            }
+        }
 
     }
+}
+public class CorrecaoCompletaInput
+{
+    public int PedidoId { get; set; }
+    public int UsuarioId { get; set; }
+    public string NovaObservacao { get; set; } = "";
+
+    // Como a classe já existe no seu projeto, o C# vai achar ela sozinho!
+    public List<ItemDetalhadoDto> Itens { get; set; } = new();
+}
+
+public class TipoProdutoOption
+{
+    public int Id { get; set; }
+    public string Nome { get; set; } = "";
 }
