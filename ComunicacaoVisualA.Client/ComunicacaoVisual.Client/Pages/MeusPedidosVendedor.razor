@@ -231,12 +231,17 @@
 
     private void FecharModais() { mostrarModalEntrega = false; mostrarModalCorrecao = false; }
 
+    // 🚀 APROVAR DIRETO (Sem esbarrar no financeiro)
     private async Task AtualizarStatus(int pedidoId, int novoStatusId)
     {
-        if (!await JS.InvokeAsync<bool>("confirm", "Deseja realmente APROVAR a arte e mandar para a produção?")) return;
-        var request = new AtualizarStatusPedidoInput { PedidoId = pedidoId, NovoStatusId = novoStatusId, UsuarioId = usuarioIdLogado };
-        var (sucesso, mensagem) = await VendedorService.AtualizarStatusPedidoAsync(request);
-        if (sucesso) await CarregarPedidos(); else await JS.InvokeVoidAsync("alert", mensagem);
+        if (!await JS.InvokeAsync<bool>("confirm", "Deseja realmente APROVAR a arte e mandar para a impressão?")) return;
+
+        // O segredo: Usamos o método genérico passando o NovoStatusId (4) e texto vazio!
+        // Ele vai no banco e apenas avança a OS, ignorando o financeiro.
+        var (sucesso, mensagem) = await VendedorService.SolicitarCorrecaoAsync(pedidoId, usuarioIdLogado, novoStatusId, "");
+        
+        if (sucesso) await CarregarPedidos(); 
+        else await JS.InvokeVoidAsync("alert", mensagem);
     }
 
     private async Task CancelarPedido(int pedidoId, string os)

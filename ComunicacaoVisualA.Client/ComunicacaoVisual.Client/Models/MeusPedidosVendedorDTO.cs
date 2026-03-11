@@ -101,4 +101,17 @@ namespace ComunicacaoVisual.Client.Models
         public int StatusArteId { get; set; }
         public string StatusArteNome { get; set; } = "";
     }
+    public class DashboardVendedorResult
+    {
+        public decimal TotalVendidoMes { get; set; }
+        public int MesAlvo { get; set; }
+        public int AnoAlvo { get; set; }
+        public int QtdArte { get; set; }
+        public int QtdImpressao { get; set; }
+        public int QtdProducao { get; set; }
+        public int QtdEntregues { get; set; }
+
+        // Ele vai reaproveitar a classe MeuPedidoVendedorDTO lá de cima para montar a tabela!
+        public List<MeuPedidoVendedorDTO> HistoricoPedidos { get; set; } = new();
+    }
 }

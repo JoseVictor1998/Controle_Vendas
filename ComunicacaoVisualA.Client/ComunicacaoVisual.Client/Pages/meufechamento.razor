@@ -1,0 +1,167 @@
+﻿@page "/meu-fechamento"
+@using System.Net.Http.Headers
+@using System.Net.Http.Json
+@using System.Text.Json
+@using ComunicacaoVisual.Client.Models
+@inject ComunicacaoVisual.Client.Services.VendedorService VendedorService
+@inject IJSRuntime JS
+
+<style>
+    .page-container { background-color: #0f172a; min-height: 100vh; padding: 2rem; color: #f8fafc; }
+    .header-section { margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; }
+    
+    /* CARDS DO DASHBOARD */
+    .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .dash-card { background: #1e293b; padding: 1.5rem; border-radius: 12px; border: 1px solid #334155; text-align: center; }
+    .dash-card h3 { color: #94a3b8; font-size: 0.9rem; text-transform: uppercase; margin-top: 0; }
+    .dash-card .value { font-size: 2rem; font-weight: 800; color: white; margin: 0.5rem 0; }
+    .card-destaque { border-color: #22c55e; background: rgba(34, 197, 94, 0.05); }
+    .card-destaque .value { color: #22c55e; }
+
+    /* FILTROS E TABELA */
+    .input-field { background: #0f172a; border: 1px solid #475569; color: white; padding: 0.6rem; border-radius: 6px; }
+    .btn-action { border-radius: 6px; padding: 0.6rem 1.2rem; font-weight: 600; cursor: pointer; border: none; }
+    .btn-green { background-color: #22c55e; color: white; }
+    .btn-dark { background-color: #334155; color: white; }
+    
+    .custom-table { width: 100%; border-collapse: separate; border-spacing: 0 0.5rem; margin-top: 1rem; }
+    .custom-table thead th { color: #94a3b8; text-transform: uppercase; font-size: 0.75rem; padding: 1rem; text-align: left; }
+    .row-base { background-color: #1e293b; border-radius: 8px; }
+    .row-base td { padding: 1rem; }
+    .status-badge { padding: 4px 10px; border-radius: 6px; font-weight: 700; font-size: 0.8rem; background: #334155; color: #cbd5e1; }
+    .bg-pronto { background: rgba(34, 197, 94, 0.2); color: #bbf7d0; border: 1px solid #22c55e; }
+</style>
+
+<div class="page-container">
+    <div class="header-section">
+        <div>
+            <h1 style="font-size: 1.8rem; font-weight: 800; color: #fedf00; margin: 0;">Meu Fechamento</h1>
+            <p style="color: #94a3b8; margin: 0;">Acompanhe suas metas e o histórico de vendas.</p>
+        </div>
+        <div style="display: flex; gap: 1rem;">
+            <select class="input-field" @bind="mesSelecionado">
+                @for (int i = 1; i <= 12; i++) { <option value="@i">Mês @i</option> }
+            </select>
+            <select class="input-field" @bind="anoSelecionado">
+                <option value="2025">2025</option>
+                <option value="2026">2026</option>
+            </select>
+            <button class="btn-action btn-green" @onclick="CarregarDashboard">Atualizar</button>
+        </div>
+    </div>
+
+    @if (carregando)
+    {
+        <div style="color: #94a3b8;">Calculando suas comissões...</div>
+    }
+    else if (dashboard != null)
+    {
+        @* 📊 OS CARDS DO DASHBOARD *@
+        <div class="dashboard-grid">
+            <div class="dash-card card-destaque">
+                <h3>Vendido Neste Mês</h3>
+                <div class="value">R$ @dashboard.TotalVendidoMes.ToString("N2")</div>
+                <span style="color: #94a3b8; font-size: 0.8rem;">OS Entregues e Recebidas</span>
+            </div>
+            <div class="dash-card">
+                <h3>🎨 Fila de Arte</h3>
+                <div class="value">@dashboard.QtdArte</div>
+                <span style="color: #fde047; font-size: 0.8rem;">Aguardando Design</span>
+            </div>
+            <div class="dash-card">
+                <h3>🖨️ Fila de Impressão</h3>
+                <div class="value">@dashboard.QtdImpressao</div>
+                <span style="color: #38bdf8; font-size: 0.8rem;">Saindo na Plotter</span>
+            </div>
+            <div class="dash-card">
+                <h3>🔨 Produção / Acabamento</h3>
+                <div class="value">@dashboard.QtdProducao</div>
+                <span style="color: #fb923c; font-size: 0.8rem;">Serralheria/Montagem</span>
+            </div>
+            <div class="dash-card">
+                <h3>📦 Prontas / Entregues</h3>
+                <div class="value" style="color: #22c55e;">@dashboard.QtdEntregues</div>
+                <span style="color: #bbf7d0; font-size: 0.8rem;">Dinheiro no Caixa</span>
+            </div>
+        </div>
+
+        @* 🔍 ÁREA DE HISTÓRICO E PESQUISA *@
+        <h2 style="color: white; border-bottom: 1px solid #334155; padding-bottom: 0.5rem;">Histórico de Pedidos</h2>
+        <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+            <input type="text" class="input-field" style="width: 300px;" placeholder="Buscar por Cliente ou OS..." @bind="termoPesquisa" @onkeyup="VerificarEnter" />
+            <button class="btn-action btn-dark" @onclick="CarregarDashboard">Buscar</button>
+        </div>
+
+        <table class="custom-table">
+            <thead>
+                <tr><th>OS</th><th>Data</th><th>Cliente</th><th>Valor Total</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+                @if (dashboard.HistoricoPedidos == null || !dashboard.HistoricoPedidos.Any())
+                {
+                    <tr><td colspan="5" style="text-align: center; color: #94a3b8;">Nenhum pedido encontrado no histórico.</td></tr>
+                }
+                else
+                {
+                    @foreach (var p in dashboard.HistoricoPedidos)
+                    {
+                        <tr class="row-base">
+                            <td style="font-weight: 800; color: white;">@p.Os</td>
+                            <td style="color: #94a3b8;">@(p.DataPedido?.ToString("dd/MM/yyyy HH:mm") ?? "-")</td>
+                            <td style="font-weight: 600; color: white;">@p.Cliente</td>
+                            <td style="color: #22c55e; font-weight: bold;">R$ @(p.ValorTotal?.ToString("N2") ?? "0,00")</td>
+                            <td>
+                                <span class="status-badge @(p.StatusId >= 6 ? "bg-pronto" : "")">@p.StatusAtual</span>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+@code {
+    private bool carregando = true;
+    private DashboardVendedorResult? dashboard;
+    private int usuarioIdLogado = 0;
+    
+    // Filtros
+    private int mesSelecionado = DateTime.Now.Month;
+    private int anoSelecionado = DateTime.Now.Year;
+    private string termoPesquisa = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        usuarioIdLogado = await GetUsuarioIdFromJwtAsync();
+        await CarregarDashboard();
+    }
+
+    private async Task CarregarDashboard()
+    {
+        carregando = true;
+        dashboard = await VendedorService.ObterDashboardAsync(usuarioIdLogado, mesSelecionado, anoSelecionado, termoPesquisa);
+        carregando = false;
+    }
+
+    private async Task VerificarEnter(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") await CarregarDashboard();
+    }
+
+    private async Task<int> GetUsuarioIdFromJwtAsync()
+    {
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "authToken");
+        if (string.IsNullOrWhiteSpace(token)) return 0;
+        try {
+            var parts = token.Split('.');
+            if (parts.Length != 3) return 0;
+            var payload = parts[1].Replace('-', '+').Replace('_', '/');
+            switch (payload.Length % 4) { case 2: payload += "=="; break; case 3: payload += "="; break; }
+            var jsonBytes = Convert.FromBase64String(payload);
+            using var doc = JsonDocument.Parse(jsonBytes);
+            if (doc.RootElement.TryGetProperty("UsuarioId", out var idProp)) { if (int.TryParse(idProp.ToString(), out var id)) return id; }
+            return 0;
+        } catch { return 0; }
+    }
+}

@@ -69,5 +69,20 @@ namespace ComunicacaoVisual.Client.Services
             }
             catch (Exception ex) { return (false, ex.Message); }
         }
+
+        // 5. Busca o Dashboard e o Histórico do Vendedor
+        public async Task<DashboardVendedorResult?> ObterDashboardAsync(int vendedorId, int? mes = null, int? ano = null, string? filtro = null)
+        {
+            try
+            {
+                var url = $"api/Producao/DashboardVendedor?vendedorId={vendedorId}";
+                if (mes.HasValue) url += $"&mes={mes.Value}";
+                if (ano.HasValue) url += $"&ano={ano.Value}";
+                if (!string.IsNullOrWhiteSpace(filtro)) url += $"&filtro={filtro}";
+
+                return await _http.GetFromJsonAsync<DashboardVendedorResult>(url);
+            }
+            catch { return null; }
+        }
     }
 }

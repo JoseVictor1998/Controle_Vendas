@@ -361,6 +361,84 @@ namespace ComunicacaoVisual.API.Controllers
             return Ok(lista);
         }
 
+        [Authorize(Roles = "God,Admin,Vendedor")]
+        [HttpGet("DashboardVendedor")]
+        public async Task<IActionResult> GetDashboardVendedor([FromQuery] int vendedorId, [FromQuery] int? mes, [FromQuery] int? ano, [FromQuery] string? filtro)
+        {
+            try
+            {
+                var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+                var idLogado = User.FindFirst("UsuarioId")?.Value;
+
+                if (role == "Vendedor" && idLogado != vendedorId.ToString())
+                    return Forbid("Acesso negado. Você só pode ver o seu próprio dashboard.");
+
+                var dataAtual = DateTime.Now;
+                var filtroMes = mes ?? dataAtual.Month;
+                var filtroAno = ano ?? dataAtual.Year;
+
+                // 1. Prepara a base de busca apenas para este vendedor
+                var queryBase = _context.Pedidos
+                    .Include(p => p.Cliente)
+                    .Include(p => p.Status)
+                    .Include(p => p.PedidoItems)
+                    .Where(p => p.VendedorId == vendedorId);
+
+                // 2. Calcula o Total Vendido NO MÊS SELECIONADO (Ignora cancelados = Status 8)
+                var pedidosDoMes = await queryBase
+                    .Where(p => p.DataPedido.HasValue && p.DataPedido.Value.Month == filtroMes && p.DataPedido.Value.Year == filtroAno && p.StatusId != 8)
+                    .ToListAsync();
+
+                var totalVendidoMes = pedidosDoMes.Sum(p => p.ValorTotal ?? 0);
+
+                // 3. Conta o Funil em Tempo Real (Independente do mês)
+                var qtdArte = await queryBase.CountAsync(p => p.StatusId == 2 || p.StatusId == 3);
+                var qtdImpressao = await queryBase.CountAsync(p => p.StatusId == 4);
+                var qtdProducao = await queryBase.CountAsync(p => p.StatusId == 5);
+                var qtdEntregues = await queryBase.CountAsync(p => p.StatusId == 6 || p.StatusId == 7);
+
+                // 4. Monta o Histórico (Com barra de pesquisa)
+                if (!string.IsNullOrEmpty(filtro))
+                {
+                    queryBase = queryBase.Where(p => p.OsExterna.Contains(filtro) || p.Cliente.Nome.Contains(filtro));
+                }
+
+                var historico = await queryBase
+                    .OrderByDescending(p => p.DataPedido)
+                    .Select(p => new
+                    {
+                        pedido_ID = p.PedidoId,
+                        os = p.OsExterna,
+                        cliente = p.Cliente.Nome,
+                        status_ID = p.StatusId,
+                        status_Atual = p.Status.Nome,
+                        valor_Total = p.ValorTotal,
+                        data_Pedido = p.DataPedido,
+                        qtd_Itens = p.PedidoItems.Count()
+                    })
+                    .Take(100) // Traz as 100 mais recentes para não travar a tela
+                    .ToListAsync();
+
+                // 5. Devolve tudo empacotado para o Blazor!
+                return Ok(new DashboardVendedorResult
+                {
+                    TotalVendidoMes = totalVendidoMes,
+                    MesAlvo = filtroMes,
+                    AnoAlvo = filtroAno,
+                    QtdArte = qtdArte,
+                    QtdImpressao = qtdImpressao,
+                    QtdProducao = qtdProducao,
+                    QtdEntregues = qtdEntregues,
+                    HistoricoPedidos = historico
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { erro = "Erro ao carregar dashboard do vendedor", detalhe = ex.Message });
+            }
+        }
+
+
 
         [Authorize(Roles = "God,Admin,Arte")]
         [HttpGet("StatusArteListar")]
@@ -960,4 +1038,16 @@ public class TipoProdutoOption
 {
     public int Id { get; set; }
     public string Nome { get; set; } = "";
+}
+
+public class DashboardVendedorResult
+{
+    public decimal TotalVendidoMes { get; set; }
+    public int MesAlvo { get; set; }
+    public int AnoAlvo { get; set; }
+    public int QtdArte { get; set; }
+    public int QtdImpressao { get; set; }
+    public int QtdProducao { get; set; }
+    public int QtdEntregues { get; set; }
+    public object HistoricoPedidos { get; set; } = null!;
 }
