@@ -202,7 +202,7 @@
             if (!string.IsNullOrEmpty(token))
                 Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-            pedidos = await Http.GetFromJsonAsync<List<FilaImpressaoDTO>>("api/Producao/FilaImpressao");
+            pedidos = await Http.GetFromJsonAsync<List<FilaImpressaoDTO>>("api/Filas/FilaImpressao");
         }
         catch (Exception ex) { Console.WriteLine(ex.Message); pedidos = new(); }
     }
@@ -214,7 +214,7 @@
 
         try 
         {
-            var response = await Http.GetAsync($"api/Producao/DownloadArte/{arquivoId}");
+            var response = await Http.GetAsync($"api/Artes/DownloadArte/{arquivoId}");
 
             if (response.IsSuccessStatusCode)
             {
@@ -247,7 +247,7 @@
         // Note que o seu DTO já tem essa propriedade mapeada
         var request = new { ItemId = p.ItemId, NovoStatusId = 5 };
         
-        var res = await Http.PutAsJsonAsync("api/Producao/AtualizarStatus", request);
+        var res = await Http.PutAsJsonAsync("api/Pedidos/AtualizarStatus", request);
 
         if (res.IsSuccessStatusCode) 
         {

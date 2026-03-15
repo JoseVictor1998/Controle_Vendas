@@ -228,7 +228,7 @@ private async Task Concluir(FilaProducaoCompletaDTO p)
         // 🚀 Mandando para o Status 6 (ou o número que significa "Pronto" na sua empresa)
         var request = new { ItemId = p.ItemId, NovoStatusId = 6 }; 
         
-        var res = await Http.PutAsJsonAsync("api/Producao/AtualizarStatus", request);
+        var res = await Http.PutAsJsonAsync("api/Pedidos/AtualizarStatus", request);
 
         if (res.IsSuccessStatusCode) 
         {            

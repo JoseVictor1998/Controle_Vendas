@@ -15,7 +15,7 @@ public class PedidoService
 
     public async Task<(bool ok, string mensagem)> CriarPedidoAsync(CriarPedidoComItemInput input)
     {
-        var res = await _http.PostAsJsonAsync("api/Producao/CriarPedido", input);
+        var res = await _http.PostAsJsonAsync("api/Pedidos/CriarPedido", input);
 
         if (res.IsSuccessStatusCode)
         {

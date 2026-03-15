@@ -1,0 +1,108 @@
+﻿@page "/cadastrar-usuario"
+@using System.Net.Http.Json
+@using ComunicacaoVisual.Client.Models
+@inject HttpClient Http
+@inject IJSRuntime JS
+
+<style>
+    .page-container { background-color: #0f172a; min-height: 100vh; padding: 2rem; color: #f8fafc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    .header-section { margin-bottom: 2rem; border-bottom: 1px solid #334155; padding-bottom: 1rem; text-align: center; }
+    
+    .panel-form { background: #1e293b; padding: 2.5rem; border-radius: 16px; border: 1px solid #334155; max-width: 500px; margin: 0 auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    
+    .form-group { margin-bottom: 1.5rem; }
+    .form-label { display: block; color: #94a3b8; font-size: 0.85rem; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; }
+    
+    .input-field { background: #0f172a; border: 1px solid #475569; color: white; padding: 0.8rem 1rem; border-radius: 8px; width: 100%; box-sizing: border-box; font-size: 1rem; }
+    .input-field:focus { outline: none; border-color: #fedf00; box-shadow: 0 0 0 2px rgba(254, 223, 0, 0.2); }
+    
+    .btn-action { background-color: #fedf00; color: #0f172a; border-radius: 8px; padding: 1rem; font-weight: 900; cursor: pointer; border: none; width: 100%; font-size: 1.1rem; margin-top: 1rem; text-transform: uppercase; letter-spacing: 1px; transition: all 0.2s; }
+    .btn-action:hover { background-color: #eab308; transform: translateY(-2px); }
+    .btn-action:disabled { background-color: #475569; color: #94a3b8; cursor: not-allowed; transform: none; }
+</style>
+
+<div class="page-container">
+    <div class="header-section">
+        <h1 style="font-size: 2.2rem; font-weight: 900; color: white; margin: 0;">Cadastrar <span style="color: #fedf00;">Usuário</span></h1>
+        <p style="color: #94a3b8; margin: 0;">Adicione novos funcionários e defina seus acessos ao sistema.</p>
+    </div>
+
+    <div class="panel-form">
+        <div class="form-group">
+            <label class="form-label">Nome Completo</label>
+            <input type="text" class="input-field" @bind="novoUsuario.Nome" placeholder="Ex: João da Silva" />
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Login de Acesso</label>
+            <input type="text" class="input-field" @bind="novoUsuario.Login" placeholder="Ex: joao.silva" />
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Senha Provisória</label>
+            <input type="password" class="input-field" @bind="novoUsuario.Senha" placeholder="Digite uma senha segura..." />
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Setor / Nível de Acesso</label>
+            <select class="input-field" @bind="novoUsuario.Nivel_Acesso">
+                <option value="Vendedor">Vendedor (Atendimento)</option>
+                <option value="Arte">Designer (Fila de Arte)</option>
+                <option value="Impressao">Operador de Plotter (Fila de Impressão)</option>
+                <option value="Producao">Serralheiro/Montador (Produção)</option>
+                <option value="Admin">Administrador (Gestão Financeira)</option>
+            </select>
+        </div>
+
+        <button class="btn-action" @onclick="SalvarUsuario" disabled="@processando">
+            @if (processando)
+            {
+                <span>Registrando...</span>
+            }
+            else
+            {
+                <span><i class="oi oi-person"></i> Criar Conta</span>
+            }
+        </button>
+    </div>
+</div>
+
+@code {
+    private bool processando = false;
+    
+    // Agora ele puxa o DTO certinho lá da pasta Models!
+    private CadastrarUsuarioInput novoUsuario = new() { Nivel_Acesso = "Vendedor" };
+
+    private async Task SalvarUsuario()
+    {
+        if (string.IsNullOrWhiteSpace(novoUsuario.Nome) || 
+            string.IsNullOrWhiteSpace(novoUsuario.Login) || 
+            string.IsNullOrWhiteSpace(novoUsuario.Senha))
+        {
+            await JS.InvokeVoidAsync("alert", "Opa! Preencha o Nome, Login e Senha para continuar.");
+            return;
+        }
+
+        processando = true;
+        try
+        {
+            var res = await Http.PostAsJsonAsync("api/Pessoas/CadastrarUsuario", novoUsuario);
+            
+            if (res.IsSuccessStatusCode)
+            {
+                await JS.InvokeVoidAsync("alert", "Usuário cadastrado com sucesso!");
+                novoUsuario = new() { Nivel_Acesso = "Vendedor" }; // Limpa o formulário
+            }
+            else
+            {
+                var erro = await res.Content.ReadAsStringAsync();
+                await JS.InvokeVoidAsync("alert", $"Erro ao cadastrar: {erro}");
+            }
+        }
+        catch (Exception)
+        {
+            await JS.InvokeVoidAsync("alert", "Erro de comunicação com o servidor.");
+        }
+        processando = false;
+    }
+}

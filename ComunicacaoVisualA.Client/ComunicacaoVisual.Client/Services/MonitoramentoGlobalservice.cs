@@ -16,7 +16,7 @@ namespace ComunicacaoVisual.Client.Services
         public async Task<List<VwMonitoramentoGlobalModel>> GetMonitoramentoGlobalAsync()
         {
             var resultado = await _http.GetFromJsonAsync<List<VwMonitoramentoGlobalModel>>
-                ("api/Producao/Monitoramentoglobal");
+                ("api/Dashboards/Monitoramentoglobal");
 
             return resultado ?? new List<VwMonitoramentoGlobalModel>();
         }

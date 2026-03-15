@@ -15,7 +15,7 @@ public class FilaProducaoService
     public async Task<List<FilaProducaoCompletaDTO>> Listar()
     {
         var result = await _http.GetFromJsonAsync<List<FilaProducaoCompletaDTO>>(
-            "api/Producao/FilaProducaoCompleta");
+            "api/Filas/FilaProducaoCompleta");
 
         return result ?? new List<FilaProducaoCompletaDTO>();
     }

@@ -27,7 +27,7 @@ namespace ComunicacaoVisual.Client.Services
         {
             await AplicarTokenAsync();
 
-            var response = await _http.PostAsJsonAsync("api/Producao/CadastrarCliente", cliente);
+            var response = await _http.PostAsJsonAsync("api/Pessoas/CadastrarCliente", cliente);
 
             if (response.IsSuccessStatusCode)
                 return (true, "Cliente cadastrado com sucesso!");

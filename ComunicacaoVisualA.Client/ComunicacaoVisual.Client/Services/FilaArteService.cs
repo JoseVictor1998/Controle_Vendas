@@ -16,14 +16,14 @@ namespace ComunicacaoVisual.Client.Services
         // Busca a lista de pedidos aguardando arte
         public async Task<List<FilaArteDTO>> Listar()
         {
-            return await _http.GetFromJsonAsync<List<FilaArteDTO>>("api/Producao/FilaArte")
+            return await _http.GetFromJsonAsync<List<FilaArteDTO>>("api/filas/FilaArte")
                    ?? new List<FilaArteDTO>();
         }
 
         // Realiza o download dos bytes da arte para visualização ou salvamento
         public async Task<(byte[] content, string contentType, string fileName)> BaixarArquivo(int arquivoId)
         {
-            var response = await _http.GetAsync($"api/Producao/DownloadArte/{arquivoId}");
+            var response = await _http.GetAsync($"api/Artes/DownloadArte/{arquivoId}");
 
             if (response.IsSuccessStatusCode)
             {
@@ -50,7 +50,7 @@ namespace ComunicacaoVisual.Client.Services
             content.Add(new StringContent(itemId.ToString()), "itemId");
             content.Add(fileContent, "file", file.Name);
 
-            var response = await _http.PostAsync("api/Producao/UploadArte", content);
+            var response = await _http.PostAsync("api/Artes/UploadArte", content);
 
             return response.IsSuccessStatusCode;
         }
@@ -72,7 +72,7 @@ namespace ComunicacaoVisual.Client.Services
             };
 
             // 🔄 Mudamos para PutAsJsonAsync para bater com o [HttpPut] e [FromBody] da API
-            var response = await _http.PutAsJsonAsync("api/Producao/AtualizarStatusArte", input);
+            var response = await _http.PutAsJsonAsync("api/Artes/AtualizarStatusArte", input);
             return response.IsSuccessStatusCode;
         }
     }

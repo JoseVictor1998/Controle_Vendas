@@ -17,7 +17,7 @@ namespace ComunicacaoVisual.Client.Services
         {
             try
             {
-                var url = $"api/Producao/MeusPedidosVendedor?vendedorId={vendedorId}";
+                var url = $"api/Pedidos/MeusPedidosVendedor?vendedorId={vendedorId}";
                 if (!string.IsNullOrWhiteSpace(filtro)) url += $"&filtro={filtro}";
 
                 return await _http.GetFromJsonAsync<List<MeuPedidoVendedorDTO>>(url);
@@ -30,7 +30,7 @@ namespace ComunicacaoVisual.Client.Services
         {
             try
             {
-                var res = await _http.PutAsJsonAsync("api/Producao/AtualizarStatusPedidoEntregue", input);
+                var res = await _http.PutAsJsonAsync("api/Pedidos/AtualizarStatusPedidoEntregue", input);
 
                 if (res.IsSuccessStatusCode)
                     return (true, "Status atualizado com sucesso!");
@@ -50,7 +50,7 @@ namespace ComunicacaoVisual.Client.Services
             try
             {
                 var request = new { PedidoId = pedidoId, UsuarioId = usuarioId, NovoStatusId = novoStatusId, NovaObservacao = novaObs };
-                var res = await _http.PutAsJsonAsync("api/Producao/SolicitarCorrecao", request);
+                var res = await _http.PutAsJsonAsync("api/Pedidos/SolicitarCorrecao", request);
 
                 if (res.IsSuccessStatusCode) return (true, "Atualizado!");
                 return (false, "Erro ao atualizar.");
@@ -63,7 +63,7 @@ namespace ComunicacaoVisual.Client.Services
         {
             try
             {
-                var res = await _http.PutAsJsonAsync("api/Producao/SalvarCorrecaoCompleta", input);
+                var res = await _http.PutAsJsonAsync("api/Pedidos/SalvarCorrecaoCompleta", input);
                 if (res.IsSuccessStatusCode) return (true, "Atualizado!");
                 return (false, "Erro ao atualizar.");
             }
@@ -75,7 +75,7 @@ namespace ComunicacaoVisual.Client.Services
         {
             try
             {
-                var url = $"api/Producao/DashboardVendedor?vendedorId={vendedorId}";
+                var url = $"api/Dashboards/DashboardVendedor?vendedorId={vendedorId}";
                 if (mes.HasValue) url += $"&mes={mes.Value}";
                 if (ano.HasValue) url += $"&ano={ano.Value}";
                 if (!string.IsNullOrWhiteSpace(filtro)) url += $"&filtro={filtro}";

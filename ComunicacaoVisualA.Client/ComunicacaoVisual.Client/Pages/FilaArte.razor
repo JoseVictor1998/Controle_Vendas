@@ -254,7 +254,7 @@
     
     content.Add(fileContent, "file", e.File.Name);
 
-    var res = await Http.PostAsync($"api/Producao/UploadFotoArte/{itemId}", content);
+    var res = await Http.PostAsync($"api/Artes/UploadFotoArte/{itemId}", content);
 
     if (res.IsSuccessStatusCode)
     {

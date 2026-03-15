@@ -1,0 +1,226 @@
+﻿@page "/cadastrar-produto"
+@using System.Net.Http.Json
+@using ComunicacaoVisual.Client.Models
+@inject HttpClient Http
+@inject IJSRuntime JS
+
+<style>
+    .page-container { background-color: #0f172a; min-height: 100vh; padding: 2rem; color: #f8fafc; font-family: 'Segoe UI', sans-serif;}
+    .panel { background: #1e293b; padding: 2rem; border-radius: 12px; border: 1px solid #334155; max-width: 900px; margin: 0 auto 2rem auto; }
+    
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+    .full-width { grid-column: 1 / -1; }
+    
+    label { display: block; color: #94a3b8; font-size: 0.85rem; font-weight: bold; margin-bottom: 0.5rem; text-transform: uppercase; }
+    .input-field { background: #0f172a; border: 1px solid #475569; color: white; padding: 0.8rem; border-radius: 8px; width: 100%; box-sizing: border-box; }
+    .input-field:focus { border-color: #fedf00; outline: none; }
+    
+    .checkbox-group { display: flex; gap: 2rem; background: #0f172a; padding: 1rem; border-radius: 8px; border: 1px solid #475569; }
+    .check-item { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; }
+    
+    .btn-action { background-color: #fedf00; color: #0f172a; border-radius: 8px; padding: 1rem; font-weight: 900; width: 100%; border: none; font-size: 1.1rem; cursor: pointer; text-transform: uppercase; }
+    .btn-action:hover { background-color: #eab308; }
+    
+    .btn-secondary { background-color: #3b82f6; color: white; border-radius: 8px; padding: 0.8rem; font-weight: bold; width: 100%; border: none; cursor: pointer; text-transform: uppercase; }
+    .btn-secondary:hover { background-color: #2563eb; }
+
+    .section-title { color: #fedf00; font-weight: 900; margin-bottom: 1rem; border-bottom: 2px solid #334155; padding-bottom: 0.5rem; }
+</style>
+
+<div class="page-container">
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <h1 style="color: white; font-weight: 900;">Painel de <span style="color: #fedf00;">Produtos & Estoque</span></h1>
+        <p style="color: #94a3b8;">Cadastre matérias-primas e monte os produtos do seu catálogo no mesmo lugar.</p>
+    </div>
+
+    @if (carregandoListas)
+    {
+        <div style="text-align: center; color: #fedf00;">Conectando com o estoque...</div>
+    }
+    else
+    {
+        <div class="panel" style="border-left: 4px solid #3b82f6;">
+            <h3 class="section-title" style="color: #3b82f6;">1. Falta algum material na lista? Cadastre aqui:</h3>
+            <div style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 200px;">
+                    <label>Nome do Material (Ex: PS 1mm)</label>
+                    <input type="text" class="input-field" @bind="novoMaterial.Nome" placeholder="Digite o nome..." />
+                </div>
+                <div style="flex: 2; min-width: 250px;">
+                    <label>Descrição (Opcional)</label>
+                    <input type="text" class="input-field" @bind="novoMaterial.Descricao" placeholder="Detalhes técnicos..." />
+                </div>
+                <div style="width: 150px;">
+                    <button class="btn-secondary" @onclick="SalvarMaterial" disabled="@processandoMat">
+                        @(processandoMat ? "..." : "+ Adicionar")
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel" style="border-left: 4px solid #fedf00;">
+            <h3 class="section-title">2. Montar Receita do Produto (Catálogo)</h3>
+            <div class="form-grid">
+                
+                <div>
+                    <label>Categoria do Produto</label>
+                    <select class="input-field" @bind="novoProduto.Categoria_ID">
+                        <option value="0">-- Selecione --</option>
+                        @foreach (var cat in listaCategorias)
+                        {
+                            <option value="@cat.Id">@cat.Nome</option>
+                        }
+                    </select>
+                </div>
+
+                <div>
+                    <label>Nome Comercial</label>
+                    <input type="text" class="input-field" @bind="novoProduto.Nome" placeholder="Ex: Placa ACM + Refletivo" />
+                </div>
+
+                <div class="full-width">
+                    <label>Descrição Técnica</label>
+                    <textarea class="input-field" @bind="novoProduto.Descricao_Tecnica" rows="2" placeholder="Ex: Placa de sinalização viária padrão DNIT..."></textarea>
+                </div>
+
+                <div class="full-width checkbox-group">
+                    <label class="check-item">
+                        <input type="checkbox" @bind="novoProduto.Usa_Adesivo" style="transform: scale(1.5);" />
+                        <span>Este produto requer Adesivo?</span>
+                    </label>
+                    <label class="check-item">
+                        <input type="checkbox" @bind="novoProduto.Usa_Mascara" style="transform: scale(1.5);" />
+                        <span>Este produto requer Máscara de Transferência?</span>
+                    </label>
+                </div>
+
+                <hr class="full-width" style="border-color: #334155;" />
+
+                <div class="full-width">
+                    <h3 style="color: white; margin-bottom: 1rem;">Composição (O que vai nesse produto?)</h3>
+                </div>
+
+                <div class="full-width">
+                    <label>Material Base (Obrigatório)</label>
+                    <select class="input-field" @bind="novoProduto.Material_ID_1">
+                        <option value="0">-- Selecione o Material Principal --</option>
+                        @foreach (var mat in listaMateriais) { <option value="@mat.MaterialId">@mat.Nome</option> }
+                    </select>
+                </div>
+
+                <div>
+                    <label>Material Extra 1 (Opcional)</label>
+                    <select class="input-field" @bind="Material2_Aux">
+                        <option value="0">-- Nenhum --</option>
+                        @foreach (var mat in listaMateriais) { <option value="@mat.MaterialId">@mat.Nome</option> }
+                    </select>
+                </div>
+
+                <div>
+                    <label>Material Extra 2 (Opcional)</label>
+                    <select class="input-field" @bind="Material3_Aux">
+                        <option value="0">-- Nenhum --</option>
+                        @foreach (var mat in listaMateriais) { <option value="@mat.MaterialId">@mat.Nome</option> }
+                    </select>
+                </div>
+            </div>
+
+            <button class="btn-action" @onclick="SalvarProduto" disabled="@processandoProd">
+                <i class="oi oi-check"></i> @(processandoProd ? "Salvando..." : "Salvar Produto no Catálogo")
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+    private bool carregandoListas = true;
+    private bool processandoMat = false;
+    private bool processandoProd = false;
+    
+    // As duas caixinhas! Uma para o Material, outra para o Produto.
+    private CadastrarMaterialInput novoMaterial = new();
+    private CadastrarTipoProdutoInput novoProduto = new();
+    
+    private List<CategoriaOption> listaCategorias = new();
+    private List<MaterialDTO> listaMateriais = new();
+
+    private int Material2_Aux { get; set; } = 0;
+    private int Material3_Aux { get; set; } = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CarregarDadosDoBanco();
+    }
+
+    private async Task CarregarDadosDoBanco()
+    {
+        try
+        {
+            var taskCat = Http.GetFromJsonAsync<List<CategoriaOption>>("api/Estoque/CategoriasListar");
+            var taskMat = Http.GetFromJsonAsync<List<MaterialDTO>>("api/Estoque/Materiais");
+
+            await Task.WhenAll(taskCat, taskMat);
+
+            listaCategorias = taskCat.Result ?? new();
+            listaMateriais = taskMat.Result?.Where(m => m.Ativo).ToList() ?? new();
+        }
+        catch { await JS.InvokeVoidAsync("alert", "Erro ao carregar as listas do banco."); }
+        
+        carregandoListas = false;
+    }
+
+    // 🚀 LÓGICA PARA SALVAR SÓ O MATERIAL RÁPIDO
+    private async Task SalvarMaterial()
+    {
+        if (string.IsNullOrWhiteSpace(novoMaterial.Nome))
+        {
+            await JS.InvokeVoidAsync("alert", "Digite o nome do material primeiro!");
+            return;
+        }
+
+        processandoMat = true;
+        var res = await Http.PostAsJsonAsync("api/Estoque/CadastrarMaterial", novoMaterial);
+        
+        if (res.IsSuccessStatusCode)
+        {
+            novoMaterial = new(); // Limpa a caixinha
+            await CarregarDadosDoBanco(); // 🚀 Atualiza as listas na mesma hora! O material já vai aparecer embaixo.
+            await JS.InvokeVoidAsync("alert", "Material adicionado ao estoque!");
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", "Erro ao cadastrar material.");
+        }
+        processandoMat = false;
+    }
+
+    // 🚀 LÓGICA PARA SALVAR O PRODUTO COMPLETO
+    private async Task SalvarProduto()
+    {
+        if (novoProduto.Categoria_ID == 0 || string.IsNullOrWhiteSpace(novoProduto.Nome) || novoProduto.Material_ID_1 == 0)
+        {
+            await JS.InvokeVoidAsync("alert", "Preencha a Categoria, Nome e pelo menos o Material Base!");
+            return;
+        }
+
+        novoProduto.Material_ID_2 = Material2_Aux == 0 ? null : Material2_Aux;
+        novoProduto.Material_ID_3 = Material3_Aux == 0 ? null : Material3_Aux;
+
+        processandoProd = true;
+        var res = await Http.PostAsJsonAsync("api/Estoque/CadastrarTipoProduto", novoProduto);
+        
+        if (res.IsSuccessStatusCode)
+        {
+            await JS.InvokeVoidAsync("alert", "Produto cadastrado e pronto para venda!");
+            novoProduto = new();
+            Material2_Aux = 0;
+            Material3_Aux = 0;
+        }
+        else
+        {
+            var erro = await res.Content.ReadAsStringAsync();
+            await JS.InvokeVoidAsync("alert", $"Erro do banco: {erro}");
+        }
+        processandoProd = false;
+    }
+}

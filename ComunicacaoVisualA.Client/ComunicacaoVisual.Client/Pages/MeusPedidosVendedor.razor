@@ -212,7 +212,7 @@
         try
         {
             // Carrega os Tipos de Produtos para o Dropdown do Modal
-            listaTiposProduto = await Http.GetFromJsonAsync<List<TipoProdutoOption>>("api/Producao/TiposProdutoListar") ?? new();
+            listaTiposProduto = await Http.GetFromJsonAsync<List<TipoProdutoOption>>("api/Estoque/TiposProdutoListar") ?? new();
         } catch { }
         await CarregarPedidos();
     }
@@ -261,7 +261,7 @@
         carregandoDetalhes = true;
         
         try {
-            pedidoDetalhado = await Http.GetFromJsonAsync<PedidoDetalhadoDto>($"api/Producao/PedidoDetalhado/{pedidoId}");
+            pedidoDetalhado = await Http.GetFromJsonAsync<PedidoDetalhadoDto>($"api/Pedidos/PedidoDetalhado/{pedidoId}");
         } catch {
             await JS.InvokeVoidAsync("alert", "Erro ao carregar detalhes do pedido.");
         }

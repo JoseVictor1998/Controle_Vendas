@@ -22,11 +22,45 @@
             </div>
         </AuthorizeView>
 
+        <AuthorizeView Roles="God,Admin,Vendedor">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="cadastrar-produto">
+                <span class="oi oi-tags" aria-hidden="true"></span> Montar Produto
+            </NavLink>
+        </div>
+        </AuthorizeView>
+
+       <AuthorizeView Roles="God,Admin">
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="meu-fechamento">
                 <span class="oi oi-bar-chart" aria-hidden="true"></span> Histórico / Fechamento
             </NavLink>
         </div>
+      </AuthorizeView>
+
+       <AuthorizeView Roles="God,Admin">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="gestao-custos">
+                <span class="oi oi-dollar" aria-hidden="true"></span> Gestão de Custos
+            </NavLink>
+        </div>
+       </AuthorizeView>
+
+       <AuthorizeView Roles="God,Admin">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="dashboard-gerencial">
+                <span class="oi oi-globe" aria-hidden="true"></span> Dashboard Gerencial
+            </NavLink>
+        </div>
+       </AuthorizeView>
+
+      <AuthorizeView Roles="God,Admin">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="cadastrar-usuario">
+                <span class="oi oi-people" aria-hidden="true"></span> Novo Usuário
+            </NavLink>
+        </div>
+      </AuthorizeView>
 
         @* SETOR DE VENDAS: Só God, Admin e Vendedor *@
         <AuthorizeView Roles="God,Admin,Vendedor">
@@ -61,7 +95,7 @@
         </AuthorizeView>
 
         @* SETOR DE IMPRESSÃO: Só God, Admin e Impressao/Producao *@
-        <AuthorizeView Roles="God,Admin,Impressao,Producao">
+        <AuthorizeView Roles="God,Admin,Impressao">
             <div class="nav-item px-3">
                 <NavLink class="nav-link" href="fila-impressao">
                     <span class="oi oi-print" aria-hidden="true"></span> Fila Impressão
@@ -79,29 +113,7 @@
             </div>
         </AuthorizeView>
 
-        @* GESTÃO TOTAL: Visível apenas para God e Admin *@
-        <AuthorizeView Roles="God,Admin">
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="fila-producao-geral">
-                    <span class="oi oi-list-rich" aria-hidden="true"></span> Monitoramento Geral
-                </NavLink>
-            </div>
-        </AuthorizeView>
-
-        @* GERENCIAMENTO: Só God e Admin *@
-        <AuthorizeView Roles="God,Admin">
-            <div class="nav-item px-3 mt-4">
-                <hr style="border-top: 1px solid #334155; margin: 10px 0;" />
-                <NavLink class="nav-link" href="dashboard-gerencial">
-                    <span class="oi oi-dashboard" aria-hidden="true"></span> Dashboard BI
-                </NavLink>
-            </div>
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="usuarios">
-                    <span class="oi oi-key" aria-hidden="true"></span> Usuários
-                </NavLink>
-            </div>
-        </AuthorizeView>
+       
 
         @* SAÍDA *@
         <div class="nav-item px-3 mt-5">

@@ -16,7 +16,7 @@ namespace ComunicacaoVisual.Client.Services
         {
 
             var result = await http.GetFromJsonAsync<List<BuscaRapidaDTO>>(
-                $"api/Producao/BuscaRapida?filtro={filtro}");
+                $"api/Pedidos/BuscaRapida?filtro={filtro}");
 
             return result ?? new List<BuscaRapidaDTO>();
 

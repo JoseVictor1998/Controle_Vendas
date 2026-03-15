@@ -159,7 +159,7 @@
     {
         try
         {
-            var response = await Http.GetAsync($"api/Producao/DownloadArte/{idArquivo}");
+            var response = await Http.GetAsync($"api/Artes/DownloadArte/{idArquivo}");
             
             if (response.IsSuccessStatusCode)
             {

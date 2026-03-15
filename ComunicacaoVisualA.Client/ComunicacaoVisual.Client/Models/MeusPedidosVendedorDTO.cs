@@ -114,4 +114,15 @@ namespace ComunicacaoVisual.Client.Models
         // Ele vai reaproveitar a classe MeuPedidoVendedorDTO lá de cima para montar a tabela!
         public List<MeuPedidoVendedorDTO> HistoricoPedidos { get; set; } = new();
     }
+    // 👑 CLASSE DO DASHBOARD DO CHEFE
+    public class DashboardGerencialDTO
+    {
+        public decimal Faturamento { get; set; }
+        public decimal Custos { get; set; }
+        public decimal Lucro { get; set; }
+        public int QtdArte { get; set; }
+        public int QtdImpressao { get; set; }
+        public int QtdProducao { get; set; }
+        public int QtdAcabamento { get; set; }
+    }
 }

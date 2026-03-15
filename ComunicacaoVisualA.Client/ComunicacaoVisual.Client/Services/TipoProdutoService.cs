@@ -22,7 +22,7 @@ namespace ComunicacaoVisual.Client.Services
         public async Task<List<TipoProdutoDTO>> Listar()
         {
 
-            var result = await _http.GetFromJsonAsync<List<TipoProdutoDTO>>("api/Producao/TiposProdutoListar");
+            var result = await _http.GetFromJsonAsync<List<TipoProdutoDTO>>("api/Estoque/TiposProdutoListar");
 
             return result ?? new List<TipoProdutoDTO>();
 

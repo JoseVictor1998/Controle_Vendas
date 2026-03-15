@@ -280,8 +280,8 @@
             vendedorNome = await JS.InvokeAsync<string>("localStorage.getItem", "userName") ?? "";
             model.VendedorID = await GetUsuarioIdFromJwtAsync();
 
-            clientes = await Http.GetFromJsonAsync<List<ClienteOption>>("api/Producao/ClientesListar") ?? new();
-            produtos  = await Http.GetFromJsonAsync<List<ProdutoOption>>("api/Producao/TiposProdutoListar") ?? new();
+            clientes = await Http.GetFromJsonAsync<List<ClienteOption>>("api/Pessoas/ClientesListar") ?? new();
+            produtos  = await Http.GetFromJsonAsync<List<ProdutoOption>>("api/Estoque/TiposProdutoListar") ?? new();
         }
         catch (Exception ex)
         {

@@ -15,7 +15,7 @@ namespace ComunicacaoVisual.Client.Services
         public async Task<List<FilaArteFullDTO>> Listar()
         {
             // 🚨 AJUSTE AQUI: Coloque o nome correto do seu Controller (ex: api/Producao/FilaArteFinalistaFull)
-            var result = await _http.GetFromJsonAsync<List<FilaArteFullDTO>>("api/Producao/FilaArteFinalistaFull");
+            var result = await _http.GetFromJsonAsync<List<FilaArteFullDTO>>("api/Filas/FilaArteFinalistaFull");
             return result ?? new List<FilaArteFullDTO>();
         }
     }
