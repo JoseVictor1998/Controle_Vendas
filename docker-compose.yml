@@ -4,6 +4,7 @@ services:
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: sqlserver_erp
+    restart: always
     environment:
       - ACCEPT_EULA=Y
       - MSSQL_SA_PASSWORD=Sql#2026!erp
@@ -17,8 +18,9 @@ services:
 
   comunicacaovisual.api:
     image: ${DOCKER_REGISTRY-}comunicacaovisualapi
+    restart: always
     build:
-      context: .
+      context: ./ComunicacaoVisual.API
       dockerfile: ComunicacaoVisual.API/Dockerfile
     ports:
       - "5001:8080"
@@ -36,10 +38,23 @@ services:
     networks:
       - erp-network
 
+  frontend:
+    image: comunicacaovisualclient
+    restart: always
+    build:
+      context: . 
+      dockerfile: ComunicacaoVisual.Client/ComunicacaoVisual.Client/Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - comunicacaovisual.api
+    networks:
+      - erp-network
+
 volumes:
   sqlserver_data:
   uploads_data:
-  
+
 networks:
   erp-network:
     driver: bridge
